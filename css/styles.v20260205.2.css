@@ -395,13 +395,13 @@ main {
     }
 
     .brand-logo {
-        width: clamp(96px, 24vw, 140px);
-        height: clamp(96px, 24vw, 140px);
-        margin-bottom: -6px;
+        width: clamp(72px, 22vw, 120px);
+        height: clamp(72px, 22vw, 120px);
+        margin-bottom: -4px;
     }
 
     .brand-logo::before {
-        inset: -10px;
+        inset: -8px;
         border-radius: 22px;
     }
 
@@ -511,16 +511,6 @@ main {
 @media (max-width: 420px) {
     body {
         padding: 6px;
-    }
-
-    .brand-logo {
-        width: clamp(84px, 24vw, 112px);
-        height: clamp(84px, 24vw, 112px);
-        margin-bottom: -4px;
-    }
-
-    .brand-logo::before {
-        inset: -8px;
     }
 
     header h1 {
