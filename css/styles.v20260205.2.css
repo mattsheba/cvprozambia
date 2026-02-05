@@ -533,6 +533,49 @@ main {
     }
 }
 
+@media (max-width: 380px) {
+    body {
+        padding: 5px;
+    }
+
+    main {
+        padding: 10px;
+    }
+
+    .form-container,
+    .preview-container {
+        padding: 10px;
+    }
+
+    header {
+        padding: 10px 12px 8px;
+    }
+
+    .brand-logo {
+        width: clamp(92px, 30vw, 120px);
+        height: clamp(92px, 30vw, 120px);
+        margin-bottom: -3px;
+    }
+
+    header h1 {
+        font-size: clamp(1.85rem, 9.5vw, 2.20rem);
+    }
+
+    .brand-tagline {
+        font-size: 0.92rem;
+        line-height: 1.28;
+    }
+
+    .brand-pills {
+        gap: 5px;
+    }
+
+    .pill {
+        padding: 4px 7px;
+        font-size: 0.78rem;
+    }
+}
+
 .help-text {
     margin-top: 8px;
     color: #6b7280;
