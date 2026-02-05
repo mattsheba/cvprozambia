@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111827">
+    <link rel="canonical" href="https://cvprozambia.com/">
+        <meta name="description" content="Build a clean, ATS‑friendly CV for Zambia in minutes—step‑by‑step form, live preview, bullet duties, and fast PDF export.">
+
+        <!-- Open Graph / Social sharing -->
+        <meta property="og:locale" content="en_ZM">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="CVPro Zambia">
+        <meta property="og:title" content="CVPro Zambia - ATS-Friendly CV Builder">
+        <meta property="og:description" content="Build a clean, ATS‑friendly CV for Zambia in minutes—step‑by‑step form, live preview, bullet duties, and fast PDF export.">
+        <meta property="og:url" content="https://cvprozambia.com/">
+        <meta property="og:image" content="https://cvprozambia.com/assets/og-image.png">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+
+        <!-- Twitter/X -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="CVPro Zambia - ATS-Friendly CV Builder">
+        <meta name="twitter:description" content="Build a clean, ATS‑friendly CV for Zambia in minutes—step‑by‑step form, live preview, bullet duties, and fast PDF export.">
+        <meta name="twitter:image" content="https://cvprozambia.com/assets/og-image.png">
+
+        <!-- Icons / PWA -->
+        <link rel="icon" href="/assets/favicon.ico">
+        <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+        <link rel="manifest" href="/site.webmanifest">
+
+        <!-- Structured data -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "CVPro Zambia",
+            "url": "https://cvprozambia.com/",
+            "description": "Build a clean, ATS‑friendly CV for Zambia in minutes—step‑by‑step form, live preview, bullet duties, and fast PDF export."
+        }
+        </script>
+    <title>CVPro Zambia - ATS-Friendly CV Builder</title>
+    <link rel="stylesheet" href="css/styles.v20260205.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&display=swap" rel="stylesheet">
+    <!-- Toastify for notifications -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-brand">
+                <div class="brand-logo" aria-hidden="true">
+                    <div class="brand-logo-img"></div>
+                </div>
+                <div class="brand-text">
+                    <h1>CVPro Zambia</h1>
+                    <p class="brand-tagline">A premium, ATS‑friendly CV builder with clean sections, bullet highlights, and a fast PDF export.</p>
+                    <div class="brand-pills" aria-label="Key features">
+                        <span class="pill">ATS-friendly</span>
+                        <span class="pill">Two-column skills</span>
+                        <span class="pill">Bullet duties</span>
+                        <span class="pill">Live preview</span>
+                        <span class="pill">PDF export</span>
+                        <span class="pill">Zambia-ready</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="cv-layout">
+            <div class="form-container">
+                <div class="wizard-header" aria-label="Form progress">
+                    <div id="wizardProgress" class="wizard-progress"></div>
+                    <div id="wizardStepper" class="wizard-stepper" aria-label="Steps"></div>
+                </div>
+
+                <section class="form-step" data-title="Personal Information">
+                    <h2>Personal Information</h2>
+
+                    <div class="form-group">
+                        <label for="fullName">Full Name *</label>
+                        <input type="text" id="fullName" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" placeholder="john@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" placeholder="+260 XXX XXX XXX" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profession">Profession *</label>
+                        <input type="text" id="profession" placeholder="e.g., Teacher, Nurse, Engineer">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yearsExperience">Years of Experience</label>
+                        <input type="number" id="yearsExperience" min="0" placeholder="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialization">Specialization (Optional)</label>
+                        <input type="text" id="specialization" placeholder="e.g., Pediatric Care, Web Development">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" placeholder="Street Address">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" placeholder="Lusaka">
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" placeholder="Zambia" value="Zambia">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-step" data-title="Professional Summary">
+                    <h2>Professional Summary</h2>
+                    <div class="form-group">
+                        <label for="summary">Professional Summary</label>
+                        <textarea id="summary" rows="4" placeholder="Brief summary of your professional background and career goals..."></textarea>
+                        <button type="button" class="btn-ai" onclick="generateSummary()">
+                            <span id="summaryLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="summaryText">✨ Generate Summary</span>
+                        </button>
+                        <div id="summarySuggestionWrap" class="suggestions-wrap" style="display: none;">
+                            <div class="suggestions-header">
+                                <div class="suggestions-title">Suggested summary</div>
+                                <div class="suggestions-actions">
+                                    <button type="button" class="btn-secondary btn-mini" onclick="addGeneratedSummary()">Add</button>
+                                    <button type="button" class="btn-secondary btn-mini" onclick="discardGeneratedSummary()">Clear</button>
+                                </div>
+                            </div>
+                            <div id="summarySuggestionText" class="suggestion-text"></div>
+                        </div>
+                        <p class="help-text">Tip: You can edit the summary after generating it.</p>
+                    </div>
+                </section>
+
+                <section class="form-step" data-title="Skills">
+                    <h2>Skills</h2>
+                    <div class="form-group">
+                        <label for="skillInput">Add Skills</label>
+                        <div class="skill-input-group">
+                            <input type="text" id="skillInput" placeholder="e.g., Project Management">
+                            <button type="button" onclick="addSkill()">Add</button>
+                        </div>
+                        <button type="button" class="btn-ai" onclick="generateSkills()">
+                            <span id="skillsLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="skillsText">✨ Suggest Skills</span>
+                        </button>
+                        <div id="skillsSuggestionsWrap" class="suggestions-wrap" style="display: none;">
+                            <div class="suggestions-header">
+                                <div class="suggestions-title">Suggested skills</div>
+                                <div class="suggestions-actions">
+                                    <button type="button" class="btn-secondary btn-mini" onclick="addAllSuggestedSkills()">Add all</button>
+                                    <button type="button" class="btn-secondary btn-mini" onclick="clearSkillSuggestions()">Clear</button>
+                                </div>
+                            </div>
+                            <div id="skillsSuggestions" class="tags-container"></div>
+                        </div>
+                        <div id="skillsList" class="tags-container"></div>
+                        <p class="help-text">Tip: Click a skill to edit it.</p>
+                    </div>
+                </section>
+
+                <section class="form-step" data-title="Work Experience">
+                    <h2>Work Experience</h2>
+                    <div id="experienceList"></div>
+                    <button type="button" class="btn-secondary" onclick="addExperience()">+ Add Experience</button>
+                </section>
+
+                <section class="form-step" data-title="Education">
+                    <h2>Education</h2>
+                    <div id="educationList"></div>
+                    <button type="button" class="btn-secondary" onclick="addEducation()">+ Add Education</button>
+                </section>
+
+                <section class="form-step" data-title="Certifications & Licensing">
+                    <h2>Certifications & Licensing (Optional)</h2>
+                    <div id="certificationsList"></div>
+                    <button type="button" class="btn-secondary" onclick="addCertification()">+ Add Certification/License</button>
+                </section>
+
+                <section class="form-step" data-title="Languages">
+                    <h2>Languages (Optional)</h2>
+                    <div id="languagesList"></div>
+                    <button type="button" class="btn-secondary" onclick="addLanguage()">+ Add Language</button>
+                </section>
+
+                <section class="form-step" data-title="Hobbies">
+                    <h2>Hobbies (Optional)</h2>
+                    <div class="form-group">
+                        <label for="hobbyInput">Add Hobby</label>
+                        <div class="skill-input-group">
+                            <input type="text" id="hobbyInput" placeholder="e.g., Reading">
+                            <button type="button" onclick="addHobby()">Add</button>
+                        </div>
+                        <div id="hobbiesList" class="tags-container"></div>
+                    </div>
+                </section>
+
+                <section class="form-step" data-title="References">
+                    <h2>References (Optional)</h2>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="includeReferences" checked onchange="updatePreview()">
+                            Include references section
+                        </label>
+                        <p class="help-text">Tip: "Available upon request" is ATS-friendly.</p>
+                    </div>
+                    <div id="referencesList"></div>
+                    <button type="button" class="btn-secondary" onclick="addReference()">+ Add Reference</button>
+                </section>
+
+                <section class="form-step" data-title="Download">
+                    <h2>Download</h2>
+                    <p class="help-text">Review the Live Preview, then download your CV as a clean PDF.</p>
+                    <div class="account-box" id="accountBox" aria-label="Account">
+                        <div class="account-row">
+                            <div class="account-status" id="accountStatus">Sign in to download and access your saved CV later.</div>
+                            <div class="account-actions">
+                                <button type="button" class="btn-secondary btn-mini" onclick="openLogin()" id="loginBtn">Login</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="openSignup()" id="signupBtn">Sign up</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="logout()" id="logoutBtn" style="display:none">Logout</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="loadSavedCv()" id="loadCvBtn" style="display:none">Load saved</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="saveCvNow()" id="saveCvBtn" style="display:none">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" onclick="handleDownload()" id="downloadBtn">
+                            <span id="downloadLoading" style="display: none;">⏳ Processing...</span>
+                            <span id="downloadText">💰 Pay ZMW 50 & Download CV</span>
+                        </button>
+                        <p class="help-text" id="downloadLoginHint">No account needed for a one‑off download. Sign up after to save and re‑download for free.</p>
+                    </div>
+                </section>
+
+                <div class="wizard-nav" aria-label="Step navigation">
+                    <button type="button" id="wizardPrev" class="btn-secondary">← Previous</button>
+                    <button type="button" id="wizardNext" class="btn-secondary">Next →</button>
+                </div>
+            </div>
+
+            <aside class="preview-container" aria-label="CV preview">
+                <h2>Live Preview (ATS-Friendly)</h2>
+                <div id="cvPreview" class="cv-preview"></div>
+                <p class="help-text">The PDF uses the same content and bullet formatting.</p>
+            </aside>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-inner">
+                <div class="footer-top">
+                    <div class="footer-brand">
+                        <div class="footer-brand-title">CVPro Zambia</div>
+                        <div class="footer-brand-sub">ATS-friendly CV builder • Fast PDF export</div>
+                    </div>
+
+                    <div class="footer-links" aria-label="Contact links">
+                        <a class="footer-link" href="tel:+260977669883">
+                            <svg class="footer-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            <span class="footer-link-meta"><span class="footer-link-label">Call:</span> <span class="footer-link-text">+260977669883</span></span>
+                        </a>
+                        <a class="footer-link" href="https://wa.me/260977669883" target="_blank" rel="noopener noreferrer">
+                            <svg class="footer-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.04 2C6.53 2 2.04 6.49 2.04 12c0 1.77.46 3.46 1.33 4.95L2 22l5.2-1.36A9.96 9.96 0 0 0 12.04 22c5.51 0 10-4.49 10-10s-4.49-10-10-10zm0 18.2c-1.53 0-3.02-.41-4.31-1.18l-.31-.18-3.09.81.82-3.01-.2-.31a8.16 8.16 0 0 1-1.26-4.33c0-4.51 3.67-8.18 8.18-8.18s8.18 3.67 8.18 8.18-3.67 8.19-8.18 8.19zm4.76-6.17c-.26-.13-1.52-.75-1.75-.84-.23-.08-.4-.13-.57.13-.17.26-.65.84-.8 1.01-.15.17-.29.2-.55.07-.26-.13-1.08-.4-2.05-1.27-.76-.67-1.27-1.5-1.42-1.76-.15-.26-.02-.4.11-.53.12-.12.26-.29.39-.44.13-.15.17-.26.26-.44.08-.17.04-.33-.02-.46-.07-.13-.57-1.38-.78-1.89-.2-.48-.4-.42-.57-.42h-.48c-.17 0-.44.07-.67.33-.23.26-.88.86-.88 2.1s.91 2.43 1.04 2.6c.13.17 1.78 2.72 4.31 3.81.6.26 1.07.41 1.43.52.6.19 1.14.16 1.57.1.48-.07 1.52-.62 1.73-1.22.21-.6.21-1.11.15-1.22-.06-.11-.23-.17-.48-.3z"/></svg>
+                            <span class="footer-link-meta"><span class="footer-link-label">WhatsApp:</span> <span class="footer-link-text">+260977669883</span></span>
+                        </a>
+                        <a class="footer-link" href="mailto:info.glamifiedstore@gmail.com">
+                            <svg class="footer-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <span class="footer-link-meta"><span class="footer-link-label">Email:</span> <span class="footer-link-text">info.glamifiedstore@gmail.com</span></span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <p class="footer-powered">Powered by Glamified Systems</p>
+                    <a href="/admin" class="btn-secondary btn-mini" id="adminBtn" style="display:none">Admin</a>
+                    <p class="footer-copy">&copy; 2026 CVPro Zambia. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/260977669883" target="_blank" rel="noopener" class="whatsapp-button" title="Chat with us on WhatsApp">
+        <svg viewBox="0 0 32 32" width="32" height="32">
+            <path fill="white" d="M16 0c-8.837 0-16 7.163-16 16 0 2.825 0.737 5.607 2.137 8.048l-2.137 7.952 7.933-2.127c2.42 1.37 5.173 2.127 8.067 2.127 8.837 0 16-7.163 16-16s-7.163-16-16-16zM16 29.467c-2.482 0-4.908-0.646-7.07-1.87l-0.507-0.292-4.713 1.262 1.262-4.669-0.292-0.508c-1.207-2.100-1.847-4.507-1.847-6.924 0-7.435 6.053-13.489 13.489-13.489s13.489 6.053 13.489 13.489-6.053 13.489-13.489 13.489zM21.305 18.421c-0.292-0.146-1.723-0.852-1.989-0.949s-0.461-0.146-0.656 0.146-0.754 0.949-0.924 1.145-0.34 0.219-0.632 0.073-1.231-0.454-2.343-1.448c-0.866-0.773-1.451-1.728-1.621-2.020s-0.018-0.449 0.128-0.594c0.131-0.131 0.292-0.34 0.438-0.511s0.195-0.292 0.292-0.486 0.049-0.365-0.024-0.511-0.656-1.584-0.898-2.169c-0.236-0.571-0.477-0.494-0.656-0.503-0.17-0.009-0.365-0.011-0.559-0.011s-0.511 0.073-0.778 0.365-1.022 1-1.022 2.438 1.046 2.828 1.192 3.023 2.059 3.145 4.989 4.408c0.696 0.3 1.239 0.479 1.662 0.614 0.699 0.219 1.335 0.188 1.837 0.114 0.561-0.083 1.723-0.705 1.965-1.387s0.243-1.267 0.17-1.387-0.267-0.195-0.559-0.34z"/>
+        </svg>
+    </a>
+
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="js/config.v20260205.js"></script>
+    <script src="js/app-standalone.v20260205.js"></script>
+</body>
+</html>
