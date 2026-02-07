@@ -6,4 +6,20 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://cvprozambia.com/admin</loc>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://cvprozambia.com/robots.txt</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://cvprozambia.com/sitemap.xml</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://cvprozambia.com/site.webmanifest</loc>
+    <priority>0.2</priority>
+  </url>
 </urlset>

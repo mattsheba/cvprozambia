@@ -2493,7 +2493,9 @@ function generatePDF(data, options = {}) {
 // Handle Download with Payment (Standalone Mode)
 async function handleDownload() {
     const data = collectCVData();
-    
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) downloadBtn.disabled = true;
+
     // Validation
     if (!data.personalInfo.fullName) {
         showToast('Please enter your full name before downloading.', 'error');
@@ -2606,12 +2608,12 @@ async function handleDownload() {
             cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
             coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
             const ent = await getEntitlement();
-
             const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
             const coverOk = Boolean(ent?.paidCoverHash) && ent.paidCoverHash === coverHash;
             const canFreeDownload = product === 'bundle' ? (cvOk && coverOk) : product === 'cover' ? coverOk : cvOk;
 
             if (canFreeDownload) {
+                showToast('Already paid—re-download is free.', 'info');
                 if (product === 'cover') {
                     await downloadCoverLetterDocx();
                 } else {
