@@ -28,6 +28,18 @@ python3 -m http.server 8000
 ```
 Then open http://localhost:8000
 
+**Option 3: Quick local dev with mocked AI function (recommended for testing suggestions locally)**
+
+If you want to test the AI suggestion buttons locally without Netlify Functions, run the included mock server which serves the static site and responds to `/.netlify/functions/generate-ai` with a canned reply.
+
+Stop any running `python3 -m http.server` first, then run:
+
+```bash
+node dev-mock-server.js 8000
+```
+
+Open http://localhost:8000 — AI suggestion calls will succeed (mock response).
+
 ## Configuration
 
 Edit `js/config.js` to set your Lenco public key.

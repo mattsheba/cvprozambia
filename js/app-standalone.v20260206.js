@@ -18,6 +18,121 @@ const cvData = {
     }
 };
 
+// App mode:
+// - 'cv': full CV builder + optional cover letter step
+// - 'cover': create a cover letter without filling the full CV
+let appMode = 'cv';
+
+function getActiveAppMode() {
+    return appMode === 'cover' ? 'cover' : 'cv';
+}
+
+function computeWizardStepsForMode(mode) {
+    const all = Array.from(document.querySelectorAll('.form-container .form-step'));
+    const steps = all.filter((stepEl) => {
+        const m = String(stepEl.getAttribute('data-mode') || '').trim();
+        if (!m) return true;
+        if (m === 'cv') return mode === 'cv';
+        if (m === 'cover') return mode === 'cover';
+        return true;
+    });
+
+    // Hide steps that are not active in this mode.
+    for (const stepEl of all) {
+        stepEl.style.display = steps.includes(stepEl) ? '' : 'none';
+    }
+
+    return steps;
+}
+
+function toggleRequiredForMode(mode) {
+    const isCover = mode === 'cover';
+
+    const fullName = document.getElementById('fullName');
+    if (fullName) fullName.required = true;
+
+    const email = document.getElementById('email');
+    if (email) email.required = !isCover;
+
+    const phone = document.getElementById('phone');
+    if (phone) phone.required = !isCover;
+
+    const profession = document.getElementById('profession');
+    if (profession) profession.required = !isCover;
+}
+
+function toggleModeElements(mode) {
+    const all = Array.from(document.querySelectorAll('[data-mode]'));
+    for (const el of all) {
+        const m = String(el.getAttribute('data-mode') || '').trim();
+        if (!m) continue;
+        if (m === 'cv') {
+            el.style.display = mode === 'cv' ? '' : 'none';
+        } else if (m === 'cover') {
+            el.style.display = mode === 'cover' ? '' : 'none';
+        }
+    }
+}
+
+function updateDownloadProductsForMode(mode) {
+    const elCv = document.getElementById('productCvOpt');
+    const elCover = document.getElementById('productCoverOpt');
+    const elBundle = document.getElementById('productBundleOpt');
+    const hint = document.getElementById('downloadProductHint');
+
+    if (mode === 'cover') {
+        if (elCv) elCv.style.display = 'none';
+        if (elBundle) elBundle.style.display = 'none';
+        if (elCover) elCover.style.display = '';
+        const coverRadio = document.querySelector('input[name="downloadProduct"][value="cover"]');
+        if (coverRadio) coverRadio.checked = true;
+        if (hint) hint.textContent = 'Tip: Cover Letter mode lets you download a Word cover letter without filling the full CV.';
+    } else {
+        if (elCv) elCv.style.display = '';
+        if (elBundle) elBundle.style.display = '';
+        if (elCover) elCover.style.display = '';
+        if (hint) hint.textContent = 'Tip: Bundle buyers can re-download each document for free if unchanged.';
+    }
+}
+
+function setAppMode(nextMode) {
+    appMode = nextMode === 'cover' ? 'cover' : 'cv';
+    try {
+        document.body?.setAttribute('data-app-mode', appMode);
+    } catch {}
+
+    toggleModeElements(appMode);
+    toggleRequiredForMode(appMode);
+
+    const previewTitle = document.getElementById('previewTitle');
+    if (previewTitle) {
+        previewTitle.textContent = appMode === 'cover' ? 'Cover Letter Preview' : 'Live Preview (ATS-Friendly)';
+    }
+
+    wizardState.steps = computeWizardStepsForMode(appMode);
+    if (!wizardState.steps.length) return;
+    renderWizardStepper();
+    wizardState.currentIndex = 0;
+    updateWizardUI();
+
+    updateDownloadProductsForMode(appMode);
+    scheduleEntitlementUiRefresh();
+    schedulePreviewUpdate();
+}
+
+function startCoverLetterOnly() {
+    setAppMode('cover');
+    goToWizardStep(0);
+}
+
+function startCvBuilder() {
+    setAppMode('cv');
+    const cvRadio = document.querySelector('input[name="downloadProduct"][value="cv"]');
+    if (cvRadio) cvRadio.checked = true;
+    scheduleEntitlementUiRefresh();
+    goToWizardStep(0);
+}
+
 let summarySuggestionDraft = '';
 let coverLetterSuggestionDraft = '';
 
@@ -378,7 +493,6 @@ function getCanonicalSnapshotForBilling() {
     return {
         personalInfo: s.personalInfo,
         includeReferences: Boolean(s.includeReferences),
-        includeCoverLetter: Boolean(s.includeCoverLetter),
         skills: Array.isArray(s.skills) ? s.skills : [],
         hobbies: Array.isArray(s.hobbies) ? s.hobbies : [],
         experience: Array.isArray(s.experience)
@@ -426,26 +540,120 @@ function getCanonicalSnapshotForBilling() {
         coverLetter: {
             role: String(s?.coverLetterRole || ''),
             company: String(s?.coverLetterCompany || ''),
+            companyAddress: String(s?.coverCompanyAddress || ''),
             text: String(s?.coverLetterText || '')
         }
     };
 }
 
-let entitlementCache = { paidHash: null, paidAt: null, fetchedAt: 0 };
+function getCanonicalSnapshotForCvBilling() {
+    const s = collectCVData();
+    return {
+        personalInfo: s.personalInfo,
+        includeReferences: Boolean(s.includeReferences),
+        skills: Array.isArray(s.skills) ? s.skills : [],
+        hobbies: Array.isArray(s.hobbies) ? s.hobbies : [],
+        experience: Array.isArray(s.experience)
+            ? s.experience.map((e) => ({
+                title: e?.title || '',
+                company: e?.company || '',
+                location: e?.location || '',
+                startDate: e?.startDate || '',
+                endDate: e?.endDate || '',
+                current: Boolean(e?.current),
+                responsibilities: Array.isArray(e?.responsibilities) ? e.responsibilities : []
+            }))
+            : [],
+        education: Array.isArray(s.education)
+            ? s.education.map((e) => ({
+                degree: e?.degree || '',
+                institution: e?.institution || '',
+                location: e?.location || '',
+                graduationDate: e?.graduationDate || ''
+            }))
+            : [],
+        certifications: Array.isArray(s.certifications)
+            ? s.certifications.map((c) => ({
+                name: c?.name || '',
+                issuer: c?.issuer || '',
+                year: c?.year || ''
+            }))
+            : [],
+        languages: Array.isArray(s.languages)
+            ? s.languages.map((l) => ({
+                language: l?.language || '',
+                proficiency: l?.proficiency || ''
+            }))
+            : [],
+        references: Array.isArray(s.references)
+            ? s.references.map((r) => ({
+                name: r?.name || '',
+                title: r?.title || '',
+                organization: r?.organization || '',
+                phone: r?.phone || '',
+                email: r?.email || ''
+            }))
+            : []
+    };
+}
+
+function getCanonicalSnapshotForCoverBilling() {
+    const s = collectCVData();
+    return {
+        personalInfo: s.personalInfo,
+        coverLetter: {
+            role: String(s?.coverLetterRole || ''),
+            company: String(s?.coverLetterCompany || ''),
+            companyAddress: String(s?.coverCompanyAddress || ''),
+            text: String(s?.coverLetterText || '')
+        }
+    };
+}
+
+function getSelectedDownloadProduct() {
+    const checked = document.querySelector('input[name="downloadProduct"]:checked');
+    const v = (checked?.value || 'cv').toString();
+    if (v === 'cv' || v === 'cover' || v === 'bundle') return v;
+    return 'cv';
+}
+
+function getPriceZmwForProduct(product) {
+    const cvPrice = typeof CV_PRICE_ZMW !== 'undefined' ? Number(CV_PRICE_ZMW) : 50;
+    const coverPrice = typeof COVER_LETTER_PRICE_ZMW !== 'undefined' ? Number(COVER_LETTER_PRICE_ZMW) : 30;
+    const bundlePrice = typeof BUNDLE_PRICE_ZMW !== 'undefined' ? Number(BUNDLE_PRICE_ZMW) : 70;
+
+    if (product === 'cover') return Number.isFinite(coverPrice) ? coverPrice : 30;
+    if (product === 'bundle') return Number.isFinite(bundlePrice) ? bundlePrice : 70;
+    return Number.isFinite(cvPrice) ? cvPrice : 50;
+}
+
+let entitlementCache = { paidHash: null, paidCvHash: null, paidCoverHash: null, paidAt: null, fetchedAt: 0 };
 async function getEntitlement() {
     const user = getCurrentUser();
-    if (!user) return { paidHash: null, paidAt: null };
+    if (!user) return { paidHash: null, paidCvHash: null, paidCoverHash: null, paidAt: null };
     const now = Date.now();
     if (entitlementCache.fetchedAt && now - entitlementCache.fetchedAt < 15_000) {
-        return { paidHash: entitlementCache.paidHash, paidAt: entitlementCache.paidAt };
+        return {
+            paidHash: entitlementCache.paidHash,
+            paidCvHash: entitlementCache.paidCvHash,
+            paidCoverHash: entitlementCache.paidCoverHash,
+            paidAt: entitlementCache.paidAt
+        };
     }
     const data = await fetchWithAuth('/.netlify/functions/cv-entitlement', { method: 'GET' });
     entitlementCache = {
         paidHash: data?.paidHash || null,
+        paidCvHash: data?.paidCvHash || data?.paidHash || null,
+        paidCoverHash: data?.paidCoverHash || null,
         paidAt: data?.paidAt || null,
         fetchedAt: now
     };
-    return { paidHash: entitlementCache.paidHash, paidAt: entitlementCache.paidAt };
+    return {
+        paidHash: entitlementCache.paidHash,
+        paidCvHash: entitlementCache.paidCvHash,
+        paidCoverHash: entitlementCache.paidCoverHash,
+        paidAt: entitlementCache.paidAt
+    };
 }
 
 async function markPaidForCurrentSnapshot(snapshotHash, payment = null) {
@@ -453,7 +661,34 @@ async function markPaidForCurrentSnapshot(snapshotHash, payment = null) {
         method: 'POST',
         body: JSON.stringify({ snapshotHash, payment })
     });
-    entitlementCache = { paidHash: data?.paidHash || snapshotHash, paidAt: data?.paidAt || null, fetchedAt: Date.now() };
+    entitlementCache = {
+        paidHash: data?.paidHash || snapshotHash,
+        paidCvHash: data?.paidCvHash || data?.paidHash || snapshotHash,
+        paidCoverHash: data?.paidCoverHash || null,
+        paidAt: data?.paidAt || null,
+        fetchedAt: Date.now()
+    };
+    return data;
+}
+
+async function markPaidForCurrentPurchase(purchase, payment = null) {
+    const payload = {
+        product: purchase?.product || 'cv',
+        cvHash: purchase?.cvHash || null,
+        coverHash: purchase?.coverHash || null,
+        payment
+    };
+    const data = await fetchWithAuth('/.netlify/functions/cv-mark-paid', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+    entitlementCache = {
+        paidHash: data?.paidHash || entitlementCache.paidHash || null,
+        paidCvHash: data?.paidCvHash || entitlementCache.paidCvHash || null,
+        paidCoverHash: data?.paidCoverHash || entitlementCache.paidCoverHash || null,
+        paidAt: data?.paidAt || null,
+        fetchedAt: Date.now()
+    };
     return data;
 }
 
@@ -471,23 +706,52 @@ async function refreshEntitlementUi() {
     const downloadText = document.getElementById('downloadText');
     const statusEl = document.getElementById('accountStatus');
 
-    if (!user) {
-        if (downloadText) downloadText.textContent = '💰 Pay ZMW 50 & Download CV';
+    // Keep price labels in sync
+    try {
+        const elCv = document.getElementById('priceCv');
+        const elCover = document.getElementById('priceCover');
+        const elBundle = document.getElementById('priceBundle');
+        if (elCv) elCv.textContent = `ZMW ${getPriceZmwForProduct('cv')}`;
+        if (elCover) elCover.textContent = `ZMW ${getPriceZmwForProduct('cover')}`;
+        if (elBundle) elBundle.textContent = `ZMW ${getPriceZmwForProduct('bundle')}`;
+    } catch {}
+
+    const product = getSelectedDownloadProduct();
+    const amountZmw = getPriceZmwForProduct(product);
+    const label = product === 'cover' ? 'Cover Letter' : product === 'bundle' ? 'Bundle' : 'CV';
+
+    // Local dev: payment gateway disabled, allow downloads without pay.
+    if (typeof PAYMENTS_ENABLED !== 'undefined' && !PAYMENTS_ENABLED) {
+        if (downloadText) downloadText.textContent = `⬇️ Download ${label} (Testing mode)`;
+        if (statusEl) {
+            const base = statusEl.textContent.split(' • ')[0];
+            statusEl.textContent = `${base} • Testing mode: payment disabled on localhost`;
+        }
         return;
     }
 
-    const canonical = getCanonicalSnapshotForBilling();
-    const hash = await sha256Hex(stableStringify(canonical));
+    if (!user) {
+        if (downloadText) downloadText.textContent = `💰 Pay ZMW ${amountZmw} & Download ${label}`;
+        return;
+    }
+
+    const cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
+    const coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
     const ent = await getEntitlement();
-    const isFree = Boolean(ent?.paidHash) && ent.paidHash === hash;
+
+    const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
+    const coverOk = Boolean(ent?.paidCoverHash) && ent.paidCoverHash === coverHash;
+    const isFree = product === 'bundle' ? (cvOk && coverOk) : product === 'cover' ? coverOk : cvOk;
 
     if (downloadText) {
-        downloadText.textContent = isFree ? '⬇️ Download CV (Free re-download)' : '💰 Pay ZMW 50 & Download CV';
+        downloadText.textContent = isFree
+            ? `⬇️ Download ${label} (Free re-download)`
+            : `💰 Pay ZMW ${amountZmw} & Download ${label}`;
     }
 
     if (statusEl) {
         const base = statusEl.textContent.split(' • ')[0];
-        statusEl.textContent = `${base} • ${isFree ? 'Free re-download enabled' : 'Edits detected: payment required to download'}`;
+        statusEl.textContent = `${base} • ${isFree ? 'Free re-download enabled for this selection' : 'Edits detected: payment required to download'}`;
     }
 }
 
@@ -524,14 +788,19 @@ function applySnapshotToForm(snapshot) {
     setVal('country', p.country || 'Zambia');
     setVal('summary', p.summary);
 
+    // Optional profile links
+    setVal('profileLinks', p.profileLinks || 'none');
+    setVal('linkedinUrl', p.linkedinUrl);
+    setVal('githubUrl', p.githubUrl);
+    updateProfileLinksUi();
+
     // Cover letter fields
     const cl = s.coverLetter && typeof s.coverLetter === 'object' ? s.coverLetter : {};
     setVal('coverRole', cl.role);
     setVal('coverCompany', cl.company);
+    setVal('coverCompanyAddress', cl.companyAddress);
     setVal('coverJobDesc', cl.jobDescription);
     setVal('coverLetterText', cl.text);
-    const includeCoverEl = document.getElementById('includeCoverLetter');
-    if (includeCoverEl) includeCoverEl.checked = Boolean(cl.includeInPdf);
 
     const includeReferencesEl = document.getElementById('includeReferences');
     if (includeReferencesEl) includeReferencesEl.checked = Boolean(s.includeReferences);
@@ -645,18 +914,148 @@ function formatDateRange(startDate, endDate, current) {
     return `${start} - ${end}`;
 }
 
+function formatLongDateForCoverPreview(d = new Date()) {
+    try {
+        return new Intl.DateTimeFormat('en-ZM', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(d);
+    } catch {
+        return d.toISOString().slice(0, 10);
+    }
+}
+
+function normalizeCompanyAddressLinesForCoverPreview(companyAddrRaw) {
+    const raw = String(companyAddrRaw || '').replace(/\r\n/g, '\n').trim();
+    if (!raw) return [];
+
+    if (raw.includes('\n')) {
+        return raw
+            .split(/\n+/g)
+            .map((x) => String(x || '').trim())
+            .filter(Boolean);
+    }
+
+    if (raw.includes(',')) {
+        const parts = raw
+            .split(',')
+            .map((x) => String(x || '').trim())
+            .filter(Boolean);
+
+        if (parts.length >= 4) {
+            const first = parts[0];
+            const middle = parts.slice(1, -2).join(', ').trim();
+            const last = `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`;
+            return [first, middle, last].filter(Boolean);
+        }
+
+        return parts.length ? parts : [raw];
+    }
+
+    return [raw];
+}
+
+function stripCoverLetterMetaLines(text) {
+    let bodyText = String(text || '').replace(/\r\n/g, '\n').trim();
+    bodyText = bodyText.replace(/^\s*dear\s+[^\n]+\n+/i, '');
+    bodyText = bodyText.replace(/^\s*re\s*:\s*[^\n]+\n+/i, '');
+    return bodyText.trim();
+}
+
+function buildCoverLetterDocxLikePreviewHtml(data) {
+    const p = data?.personalInfo || {};
+    const coverText = String(data?.coverLetterText || '').trim();
+    const role = String(data?.coverLetterRole || '').trim() || 'Role';
+    const companyName = String(data?.coverLetterCompany || '').trim() || 'Company Name';
+    const companyAddrRaw = String(data?.coverCompanyAddress || '').trim();
+
+    const applicantName = String(p?.fullName || '').trim() || 'Your Name';
+    const applicantAddress = String(p?.address || '').trim() || 'Address';
+    const applicantTown = String(p?.city || '').trim() || 'Town';
+    const applicantCountry = String(p?.country || '').trim() || 'Country';
+    const applicantEmail = String(p?.email || '').trim();
+    const applicantPhone = String(p?.phone || '').trim();
+
+    const companyAddrLines = companyAddrRaw
+        ? normalizeCompanyAddressLinesForCoverPreview(companyAddrRaw)
+        : ['Company Address'];
+
+    const reLine = `RE: APPLICATION FOR ${role}`.toUpperCase();
+    const bodyText = stripCoverLetterMetaLines(coverText);
+    const paragraphParts = bodyText.split(/\n\n+/g).map((x) => x.trim()).filter(Boolean);
+
+    const linesHtml = [];
+    const pushLine = (t, cls = '') => {
+        const safe = escapeHtml(String(t || ''));
+        linesHtml.push(`<div class="letter-line${cls ? ` ${cls}` : ''}">${safe}</div>`);
+    };
+    const pushBlank = () => linesHtml.push('<div class="letter-blank"></div>');
+
+    pushLine(applicantName, 'letter-strong');
+    pushLine(applicantAddress);
+    pushLine(applicantTown);
+    pushLine(applicantCountry);
+    if (applicantEmail) pushLine(`Email: ${applicantEmail} |`);
+    if (applicantPhone) pushLine(`Phone: ${applicantPhone} |`);
+
+    pushBlank();
+    pushLine(formatLongDateForCoverPreview(new Date()));
+    pushBlank();
+
+    pushLine(companyName, 'letter-strong');
+    for (const l of companyAddrLines) pushLine(l);
+
+    pushBlank();
+    pushLine('Dear Hiring Manager,');
+    pushBlank();
+    pushLine(reLine, 'letter-strong');
+    pushBlank();
+
+    if (!paragraphParts.length) {
+        pushLine(bodyText);
+    } else {
+        for (const part of paragraphParts) {
+            const partLines = String(part || '')
+                .split(/\n+/g)
+                .map((x) => String(x || '').trim())
+                .filter(Boolean);
+            for (const l of partLines) pushLine(l);
+            pushBlank();
+        }
+    }
+
+    return `<div class="letter-preview">${linesHtml.join('')}</div>`;
+}
+
 function updatePreview() {
     const preview = document.getElementById('cvPreview');
     if (!preview) return;
 
     const data = collectCVData();
+    const mode = getActiveAppMode();
+
+    // Cover-letter-only preview: keep it empty until the user has text.
+    if (mode === 'cover') {
+        const coverLetterText = String(data.coverLetterText || '').trim();
+        preview.innerHTML = coverLetterText
+            ? buildCoverLetterDocxLikePreviewHtml(data)
+            : `
+                <div class="help-text" style="margin-top:4px;">
+                    Your cover letter preview will appear here once you generate or paste the text.
+                </div>
+            `;
+        return;
+    }
+
     const includeReferences = Boolean(document.getElementById('includeReferences')?.checked);
-    const includeCoverLetter = Boolean(document.getElementById('includeCoverLetter')?.checked);
 
     const contact = [
         data.personalInfo.email,
         data.personalInfo.phone,
         [data.personalInfo.city, data.personalInfo.country].filter(Boolean).join(', '),
+        data.personalInfo.linkedinUrl ? `LinkedIn: ${data.personalInfo.linkedinUrl}` : '',
+        data.personalInfo.githubUrl ? `GitHub: ${data.personalInfo.githubUrl}` : ''
     ].filter(Boolean).join(' | ');
 
     const skillsHtml = data.skills?.length
@@ -732,14 +1131,10 @@ function updatePreview() {
         : '<div class="help-text">Generate or type your summary to see it here.</div>';
 
     const coverLetterText = String(data.coverLetterText || '').trim();
-    const coverLetterRole = String(data.coverLetterRole || '').trim();
-    const coverLetterCompany = String(data.coverLetterCompany || '').trim();
-    const coverTitle = [coverLetterRole || 'Cover Letter', coverLetterCompany].filter(Boolean).join(' — ');
-    const coverLetterHtml = (includeCoverLetter && coverLetterText)
-        ? `<div class="cv-section" id="cvCoverLetterSection">
-                <div class="cv-section-title">Cover Letter</div>
-                <div class="cv-contact">${escapeHtml(coverTitle)}</div>
-                <div style="white-space: pre-wrap;">${escapeHtml(coverLetterText)}</div>
+    const coverLetterPreviewHtml = coverLetterText
+        ? `<div class="cv-section" id="cvCoverLetterPreview">
+                <div class="cv-section-title">Cover Letter (Word download)</div>
+                ${buildCoverLetterDocxLikePreviewHtml(data)}
             </div>`
         : '';
 
@@ -795,7 +1190,7 @@ function updatePreview() {
             </div>
         ` : ''}
 
-        ${coverLetterHtml}
+        ${coverLetterPreviewHtml}
     `;
 }
 
@@ -1751,6 +2146,17 @@ function updateEducation(id, field, value) {
     schedulePreviewUpdate();
 }
 
+function updateProfileLinksUi() {
+    const sel = document.getElementById('profileLinks');
+    const v = String(sel?.value || 'none');
+    const linkedinWrap = document.getElementById('linkedinWrap');
+    const githubWrap = document.getElementById('githubWrap');
+    const showLinkedIn = v === 'linkedin' || v === 'both';
+    const showGitHub = v === 'github' || v === 'both';
+    if (linkedinWrap) linkedinWrap.style.display = showLinkedIn ? '' : 'none';
+    if (githubWrap) githubWrap.style.display = showGitHub ? '' : 'none';
+ }
+
 // Collect CV Data
 function collectCVData() {
     return {
@@ -1758,6 +2164,9 @@ function collectCVData() {
             fullName: document.getElementById('fullName').value.trim(),
             email: document.getElementById('email').value.trim(),
             phone: document.getElementById('phone').value.trim(),
+            profileLinks: String(document.getElementById('profileLinks')?.value || 'none'),
+            linkedinUrl: String(document.getElementById('linkedinUrl')?.value || '').trim(),
+            githubUrl: String(document.getElementById('githubUrl')?.value || '').trim(),
             profession: document.getElementById('profession').value.trim(),
             yearsExperience: document.getElementById('yearsExperience').value,
             specialization: document.getElementById('specialization').value.trim(),
@@ -1774,361 +2183,310 @@ function collectCVData() {
         hobbies: cvData.hobbies,
         references: cvData.references,
         includeReferences: Boolean(document.getElementById('includeReferences')?.checked),
-        includeCoverLetter: Boolean(document.getElementById('includeCoverLetter')?.checked),
         coverLetterRole: document.getElementById('coverRole')?.value?.trim() || '',
         coverLetterCompany: document.getElementById('coverCompany')?.value?.trim() || '',
+        coverCompanyAddress: document.getElementById('coverCompanyAddress')?.value?.trim() || '',
         coverLetterJobDesc: document.getElementById('coverJobDesc')?.value?.trim() || '',
         coverLetterText: document.getElementById('coverLetterText')?.value?.trim() || '',
         coverLetter: {
             role: document.getElementById('coverRole')?.value?.trim() || '',
             company: document.getElementById('coverCompany')?.value?.trim() || '',
+            companyAddress: document.getElementById('coverCompanyAddress')?.value?.trim() || '',
             jobDescription: document.getElementById('coverJobDesc')?.value?.trim() || '',
-            text: document.getElementById('coverLetterText')?.value?.trim() || '',
-            includeInPdf: Boolean(document.getElementById('includeCoverLetter')?.checked)
+            text: document.getElementById('coverLetterText')?.value?.trim() || ''
         }
     };
 }
 
 // Generate PDF (Client-side using jsPDF)
-function generatePDF(data) {
+function generatePDF(data, options = {}) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
-    let yPos = 20;
+
+    // CV PDF only (cover letters download separately as Word).
+    void options;
+
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
     const contentWidth = pageWidth - 2 * margin;
-    
-    // Header (ATS-friendly: keep it simple)
-    doc.setFontSize(22);
-    doc.setTextColor(0, 0, 0);
-    doc.text(data.personalInfo.fullName || 'Your Name', margin, yPos);
-    yPos += 10;
-    
-    // Contact Info
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    const contactInfo = [
-        data.personalInfo.email,
-        data.personalInfo.phone,
-        data.personalInfo.city && data.personalInfo.country 
-            ? `${data.personalInfo.city}, ${data.personalInfo.country}` 
-            : (data.personalInfo.city || data.personalInfo.country)
-    ].filter(Boolean).join(' • ');
-    doc.text(contactInfo, margin, yPos);
-    yPos += 10;
-    
-    yPos += 4;
-    
-    // Professional Summary
-    if (data.personalInfo.summary) {
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Professional Summary', margin, yPos);
-        yPos += 7;
-        
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        const summaryLines = doc.splitTextToSize(data.personalInfo.summary, contentWidth);
-        doc.text(summaryLines, margin, yPos);
-        yPos += summaryLines.length * 5 + 10;
-    }
-    
-    // Skills
-    if (data.skills.length > 0) {
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Skills', margin, yPos);
-        yPos += 7;
+    const bottomMargin = 20;
 
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
+    const rawFont = (typeof PDF_FONT_FAMILY !== 'undefined' ? String(PDF_FONT_FAMILY) : 'times').toLowerCase();
+    const fontFamily = rawFont.includes('helv') || rawFont.includes('arial') ? 'helvetica' : 'times';
 
-        // Two-column skills (ATS-friendly): draw plain text in two x positions (no tables/text boxes)
-        const skills = data.skills.map((s) => String(s || '').trim()).filter(Boolean);
+    const SIZE_BODY = 12;
+    const SIZE_HEADING = 12;
+    const LINE_H = 6;
+    const GAP_SMALL = 2;
+    const GAP_SECTION = 4;
+    const BULLET_INDENT = 5;
+
+    let yPos = 20;
+
+    const setBody = (style = 'normal') => {
+        doc.setFont(fontFamily, style);
+        doc.setFontSize(SIZE_BODY);
+        doc.setTextColor(0, 0, 0);
+    };
+
+    const setHeading = () => {
+        doc.setFont(fontFamily, 'bold');
+        doc.setFontSize(SIZE_HEADING);
+        doc.setTextColor(0, 0, 0);
+    };
+
+    const ensureSpace = (needed = LINE_H) => {
+        if (yPos + needed > pageHeight - bottomMargin) {
+            doc.addPage();
+            yPos = 20;
+        }
+    };
+
+    const writeHeading = (text) => {
+        const t = String(text || '').trim();
+        if (!t) return;
+        ensureSpace(LINE_H + GAP_SMALL);
+        setHeading();
+        doc.text(t.toUpperCase(), margin, yPos);
+        yPos += LINE_H + GAP_SMALL;
+    };
+
+    const writeLine = (text, { x = margin, style = 'normal', size = SIZE_BODY } = {}) => {
+        const t = String(text || '').trim();
+        if (!t) return;
+        ensureSpace(LINE_H);
+        doc.setFont(fontFamily, style);
+        doc.setFontSize(size);
+        doc.setTextColor(0, 0, 0);
+        doc.text(t, x, yPos);
+        yPos += LINE_H;
+    };
+
+    const writeParagraph = (text) => {
+        const t = String(text || '').trim();
+        if (!t) return;
+        setBody('normal');
+        const lines = doc.splitTextToSize(t, contentWidth);
+        for (const line of lines) {
+            ensureSpace(LINE_H);
+            doc.text(line, margin, yPos);
+            yPos += LINE_H;
+        }
+        yPos += GAP_SECTION;
+    };
+
+    const writeBullets = (items, { x = margin, width = contentWidth } = {}) => {
+        const list = Array.isArray(items) ? items : [];
+        setBody('normal');
+        for (const raw of list) {
+            const txt = String(raw || '').trim();
+            if (!txt) continue;
+            const textWidth = Math.max(10, width - BULLET_INDENT);
+            const lines = doc.splitTextToSize(txt, textWidth);
+            for (let i = 0; i < lines.length; i += 1) {
+                ensureSpace(LINE_H);
+                if (i === 0) {
+                    // Draw a solid round bullet so it looks consistent across fonts.
+                    doc.circle(x + 1.1, yPos - 1.6, 0.8, 'F');
+                }
+                doc.text(lines[i], x + BULLET_INDENT, yPos);
+                yPos += LINE_H;
+            }
+            yPos += 1;
+        }
+        yPos += GAP_SECTION;
+    };
+
+    const writeTwoColumnBullets = (items) => {
+        const skills = Array.isArray(items) ? items.map((s) => String(s || '').trim()).filter(Boolean) : [];
+        if (!skills.length) return;
+
         const gap = 10;
-        const columnWidth = (contentWidth - gap) / 2;
+        const colW = (contentWidth - gap) / 2;
         const leftX = margin;
-        const rightX = margin + columnWidth + gap;
+        const rightX = margin + colW + gap;
         const startY = yPos;
 
-        // Put first half in left column, second half in right column.
         const mid = Math.ceil(skills.length / 2);
         const left = skills.slice(0, mid);
         const right = skills.slice(mid);
 
-        let yLeft = startY;
-        left.forEach((skill) => {
-            const lines = doc.splitTextToSize(`• ${skill}`, columnWidth);
-            doc.text(lines, leftX, yLeft);
-            yLeft += lines.length * 5;
-        });
-
-        let yRight = startY;
-        right.forEach((skill) => {
-            const lines = doc.splitTextToSize(`• ${skill}`, columnWidth);
-            doc.text(lines, rightX, yRight);
-            yRight += lines.length * 5;
-        });
-
-        yPos = Math.max(yLeft, yRight) + 8;
-    }
-    
-    // Work Experience
-    if (data.experience.length > 0) {
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Work Experience', margin, yPos);
-        yPos += 10;
-        
-        data.experience.forEach(exp => {
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
+        const measureColumn = (list) => {
+            let y = startY;
+            setBody('normal');
+            for (const raw of list) {
+                const txt = String(raw || '').trim();
+                if (!txt) continue;
+                const lines = doc.splitTextToSize(txt, Math.max(10, colW - BULLET_INDENT));
+                y += lines.length * LINE_H + 1;
             }
-            
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(exp.title || 'Position', margin, yPos);
-            yPos += 6;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            const dateRange = exp.current 
-                ? `${formatMonthYear(exp.startDate)} - Present` 
-                : `${formatMonthYear(exp.startDate)} - ${formatMonthYear(exp.endDate)}`;
-            const expMeta = [String(exp.company || '').trim(), dateRange, String(exp.location || '').trim()].filter(Boolean).join(' | ');
-            doc.text(expMeta || dateRange, margin, yPos);
-            yPos += 10;
+            return y;
+        };
 
-            // Responsibilities bullets
-            const duties = Array.isArray(exp.responsibilities) ? exp.responsibilities : [];
-            if (duties.length) {
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                duties.forEach((duty) => {
-                    if (yPos > 270) {
-                        doc.addPage();
-                        yPos = 20;
+        const need = Math.max(measureColumn(left), measureColumn(right)) - yPos;
+        ensureSpace(need + GAP_SECTION);
+
+        const drawColumn = (list, x) => {
+            let y = startY;
+            setBody('normal');
+            for (const raw of list) {
+                const txt = String(raw || '').trim();
+                if (!txt) continue;
+                const lines = doc.splitTextToSize(txt, Math.max(10, colW - BULLET_INDENT));
+                for (let i = 0; i < lines.length; i += 1) {
+                    if (i === 0) {
+                        doc.circle(x + 1.1, y - 1.6, 0.8, 'F');
                     }
-                    const dutyLines = doc.splitTextToSize(`• ${duty}`, contentWidth);
-                    doc.text(dutyLines, margin, yPos);
-                    yPos += dutyLines.length * 5;
-                });
-                yPos += 8;
+                    doc.text(lines[i], x + BULLET_INDENT, y);
+                    y += LINE_H;
+                }
+                y += 1;
             }
-        });
+            return y;
+        };
+
+        const yLeft = drawColumn(left, leftX);
+        const yRight = drawColumn(right, rightX);
+        yPos = Math.max(yLeft, yRight) + GAP_SECTION;
+    };
+
+    // ===== CV =====
+
+    // Header
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(data?.personalInfo?.fullName || '').trim() || 'Your Name', margin, yPos);
+    yPos += LINE_H + GAP_SMALL;
+
+    setBody('normal');
+    const contactParts = [
+        String(data?.personalInfo?.email || '').trim(),
+        String(data?.personalInfo?.phone || '').trim(),
+        [data?.personalInfo?.city, data?.personalInfo?.country].filter(Boolean).join(', ')
+    ].filter(Boolean);
+
+    const linkedIn = String(data?.personalInfo?.linkedinUrl || '').trim();
+    const gitHub = String(data?.personalInfo?.githubUrl || '').trim();
+    if (linkedIn) contactParts.push(`LinkedIn: ${linkedIn}`);
+    if (gitHub) contactParts.push(`GitHub: ${gitHub}`);
+
+    const contactInfo = contactParts.join(' | ');
+    if (contactInfo) {
+        const lines = doc.splitTextToSize(contactInfo, contentWidth);
+        for (const line of lines) {
+            ensureSpace(LINE_H);
+            doc.text(line, margin, yPos);
+            yPos += LINE_H;
+        }
+        yPos += GAP_SECTION;
+    } else {
+        yPos += GAP_SECTION;
     }
 
-    // Certifications & Licensing (Optional)
+    // Professional Summary
+    if (String(data?.personalInfo?.summary || '').trim()) {
+        writeHeading('Professional Summary');
+        writeParagraph(String(data.personalInfo.summary || '').trim());
+    }
+
+    // Skills
+    if (Array.isArray(data.skills) && data.skills.length > 0) {
+        writeHeading('Skills');
+        writeTwoColumnBullets(data.skills);
+    }
+
+    // Work Experience
+    if (Array.isArray(data.experience) && data.experience.length > 0) {
+        writeHeading('Work Experience');
+        for (const exp of data.experience) {
+            const title = String(exp?.title || '').trim();
+            const company = String(exp?.company || '').trim();
+            const location = String(exp?.location || '').trim();
+
+            const dateRange = exp?.current
+                ? `${formatMonthYear(exp?.startDate)} - Present`
+                : `${formatMonthYear(exp?.startDate)} - ${formatMonthYear(exp?.endDate)}`;
+
+            const header = [title, company].filter(Boolean).join(' — ') || 'Work Experience';
+            ensureSpace(LINE_H * 2);
+            writeLine(header, { style: 'bold' });
+            writeLine([dateRange, location].filter(Boolean).join(' | '));
+
+            const duties = Array.isArray(exp?.responsibilities) ? exp.responsibilities : [];
+            if (duties.length) {
+                writeBullets(duties, { x: margin, width: contentWidth });
+            } else {
+                yPos += GAP_SECTION;
+            }
+        }
+    }
+
+    // Education
+    if (Array.isArray(data.education) && data.education.length > 0) {
+        writeHeading('Education');
+        for (const edu of data.education) {
+            const degree = String(edu?.degree || '').trim();
+            const institution = String(edu?.institution || '').trim();
+            const location = String(edu?.location || '').trim();
+            const grad = formatMonthYear(edu?.graduationDate);
+
+            ensureSpace(LINE_H * 2);
+            writeLine(degree || 'Education', { style: 'bold' });
+            writeLine([institution, location, grad].filter(Boolean).join(' | '));
+            yPos += GAP_SECTION;
+        }
+    }
+
+    // Certifications & Licensing
     if (Array.isArray(data.certifications) && data.certifications.length > 0) {
-        if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Certifications & Licensing', margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        data.certifications.forEach((c) => {
-            if (yPos > 270) {
-                doc.addPage();
-                yPos = 20;
-            }
-            const main = (c?.name || '').trim();
-            const meta = [c?.issuer, c?.year].map((v) => (v || '').trim()).filter(Boolean).join(' | ');
-            const lineText = `• ${main || 'Certification/License'}${meta ? ` — ${meta}` : ''}`;
-            const lines = doc.splitTextToSize(lineText, contentWidth);
-            doc.text(lines, margin, yPos);
-            yPos += lines.length * 5;
+        writeHeading('Certifications & Licensing');
+        const certLines = data.certifications.map((c) => {
+            const main = String(c?.name || '').trim() || 'Certification/License';
+            const meta = [c?.issuer, c?.year].map((v) => String(v || '').trim()).filter(Boolean).join(' | ');
+            return meta ? `${main} — ${meta}` : main;
         });
-        yPos += 8;
+        writeBullets(certLines);
     }
 
-    // Languages (Optional)
+    // Languages
     if (Array.isArray(data.languages) && data.languages.length > 0) {
-        if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Languages', margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        data.languages.forEach((l) => {
-            if (yPos > 270) {
-                doc.addPage();
-                yPos = 20;
-            }
-            const language = (l?.language || '').trim() || 'Language';
-            const proficiency = (l?.proficiency || '').trim();
-            const lineText = `• ${language}${proficiency ? ` — ${proficiency}` : ''}`;
-            const lines = doc.splitTextToSize(lineText, contentWidth);
-            doc.text(lines, margin, yPos);
-            yPos += lines.length * 5;
+        writeHeading('Languages');
+        const lines = data.languages.map((l) => {
+            const language = String(l?.language || '').trim() || 'Language';
+            const proficiency = String(l?.proficiency || '').trim();
+            return proficiency ? `${language} — ${proficiency}` : language;
         });
-        yPos += 8;
+        writeBullets(lines);
     }
 
-    // Hobbies (Optional)
+    // Hobbies
     if (Array.isArray(data.hobbies) && data.hobbies.length > 0) {
-        if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Hobbies', margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        data.hobbies.forEach((hobby) => {
-            if (yPos > 270) {
-                doc.addPage();
-                yPos = 20;
-            }
-            const lines = doc.splitTextToSize(`• ${String(hobby || '').trim()}`, contentWidth);
-            doc.text(lines, margin, yPos);
-            yPos += lines.length * 5;
-        });
-        yPos += 8;
+        writeHeading('Hobbies');
+        const lines = data.hobbies.map((h) => String(h || '').trim()).filter(Boolean);
+        writeBullets(lines);
     }
 
-    // References (Optional)
-    if (data.includeReferences) {
-        if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('References', margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
+    // References
+    if (Boolean(data.includeReferences)) {
+        writeHeading('References');
         const refs = Array.isArray(data.references) ? data.references : [];
         if (!refs.length) {
-            doc.text('Available upon request', margin, yPos);
-            yPos += 10;
+            writeLine('Available upon request');
+            yPos += GAP_SECTION;
         } else {
-            refs.forEach((r) => {
-                if (yPos > 270) {
-                    doc.addPage();
-                    yPos = 20;
-                }
-                const name = (r?.name || '').trim() || 'Reference';
-                const meta = [r?.title, r?.organization].map((v) => (v || '').trim()).filter(Boolean).join(', ');
-                const contact = [r?.phone, r?.email].map((v) => (v || '').trim()).filter(Boolean).join(' | ');
-
-                const headerLine = `• ${name}${meta ? ` — ${meta}` : ''}`;
-                const headerLines = doc.splitTextToSize(headerLine, contentWidth);
-                doc.text(headerLines, margin, yPos);
-                yPos += headerLines.length * 5;
-
-                if (contact) {
-                    const contactLines = doc.splitTextToSize(`  ${contact}`, contentWidth);
-                    doc.text(contactLines, margin, yPos);
-                    yPos += contactLines.length * 5;
-                }
-
-                yPos += 4;
-            });
-            yPos += 6;
-        }
-    }
-
-    // Cover Letter (Optional)
-    if (data.includeCoverLetter && String(data.coverLetterText || '').trim()) {
-        doc.addPage();
-        yPos = 20;
-
-        const headerName = (data.personalInfo.fullName || '').trim() || 'Your Name';
-        const headerContact = [
-            (data.personalInfo.email || '').trim(),
-            (data.personalInfo.phone || '').trim(),
-            [data.personalInfo.city, data.personalInfo.country].filter(Boolean).join(', ')
-        ].filter(Boolean).join(' • ');
-
-        doc.setFontSize(18);
-        doc.setTextColor(0, 0, 0);
-        doc.text(headerName, margin, yPos);
-        yPos += 8;
-
-        if (headerContact) {
-            doc.setFontSize(10);
-            doc.text(headerContact, margin, yPos);
-            yPos += 10;
-        } else {
-            yPos += 6;
-        }
-
-        const role = String(data.coverLetterRole || '').trim();
-        const company = String(data.coverLetterCompany || '').trim();
-        const meta = [role || 'Cover Letter', company].filter(Boolean).join(' — ');
-
-        doc.setFontSize(13);
-        doc.text(meta, margin, yPos);
-        yPos += 10;
-
-        doc.setFontSize(10);
-        const body = String(data.coverLetterText || '').trim();
-        const bodyLines = doc.splitTextToSize(body, contentWidth);
-        for (const line of bodyLines) {
-            if (yPos > 275) {
-                doc.addPage();
-                yPos = 20;
+            for (const r of refs) {
+                const name = String(r?.name || '').trim() || 'Reference';
+                const meta = [r?.title, r?.organization].map((v) => String(v || '').trim()).filter(Boolean).join(', ');
+                const contact = [r?.phone, r?.email].map((v) => String(v || '').trim()).filter(Boolean).join(' | ');
+                writeLine(meta ? `${name} — ${meta}` : name, { style: 'bold' });
+                if (contact) writeLine(contact);
+                yPos += GAP_SECTION;
             }
-            doc.text(line, margin, yPos);
-            yPos += 5;
         }
+    }
 
-        yPos += 6;
-    }
-    
-    // Education
-    if (data.education.length > 0) {
-        doc.setFontSize(13);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Education', margin, yPos);
-        yPos += 10;
-        
-        data.education.forEach(edu => {
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(edu.degree || 'Degree', margin, yPos);
-            yPos += 6;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            const grad = formatMonthYear(edu.graduationDate);
-            const eduMeta = [String(edu.institution || '').trim(), String(edu.location || '').trim(), grad].filter(Boolean).join(' | ');
-            doc.text(eduMeta, margin, yPos);
-            yPos += 10;
-        });
-    }
-    
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text('Powered by Glamified Systems • CVPro Zambia', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-    
     return doc;
 }
 
@@ -2137,8 +2495,15 @@ async function handleDownload() {
     const data = collectCVData();
     
     // Validation
-    if (!data.personalInfo.fullName || !data.personalInfo.email) {
-        showToast('Please fill in at least your name and email before downloading.', 'error');
+    if (!data.personalInfo.fullName) {
+        showToast('Please enter your full name before downloading.', 'error');
+        return;
+    }
+
+    // For paid flows we still need an email for the payment widget.
+    const paymentsEnabled = (typeof PAYMENTS_ENABLED === 'undefined') || Boolean(PAYMENTS_ENABLED);
+    if (paymentsEnabled && !String(data.personalInfo.email || '').trim()) {
+        showToast('Please enter your email (required for payment).', 'error');
         return;
     }
     
@@ -2149,26 +2514,116 @@ async function handleDownload() {
     if (textSpan) textSpan.style.display = 'none';
     
     try {
-        const reference = 'CV-' + Date.now();
+        const product = getSelectedDownloadProduct();
+        const amountZmw = getPriceZmwForProduct(product);
+        const label = product === 'cover' ? 'Cover Letter' : product === 'bundle' ? 'Bundle' : 'CV';
+        const reference = (product === 'cover' ? 'COVER' : product === 'bundle' ? 'BUNDLE' : 'CV') + '-' + Date.now();
 
-        // Load heavy 3rd-party scripts only when the user downloads.
-        await ensureJsPdfLoaded();
+        // Cover letter downloads as Word (.docx). CV remains PDF.
+        // Load jsPDF only if we will generate a PDF in this flow.
+        const needsPdf = product !== 'cover';
+        if (needsPdf) await ensureJsPdfLoaded();
 
-        // Logged-in users: if the CV hasn't changed since the last successful payment,
+        if (product !== 'cv' && !String(data.coverLetterText || '').trim()) {
+            showToast('Please add a cover letter before downloading this option.', 'error');
+            if (loadingSpan) loadingSpan.style.display = 'none';
+            if (textSpan) textSpan.style.display = 'inline';
+            return;
+        }
+
+        // Cover letters require both applicant + company address blocks.
+        if (product !== 'cv') {
+            const missing = [];
+            if (!String(data?.personalInfo?.address || '').trim()) missing.push('your address');
+            if (!String(data?.personalInfo?.city || '').trim()) missing.push('your town/city');
+            if (!String(data?.personalInfo?.country || '').trim()) missing.push('your country');
+            if (!String(data?.coverCompanyAddress || '').trim()) missing.push('company address');
+
+            if (missing.length) {
+                showToast(`Please add ${missing.join(', ')} for the cover letter.`, 'error');
+                if (loadingSpan) loadingSpan.style.display = 'none';
+                if (textSpan) textSpan.style.display = 'inline';
+                return;
+            }
+        }
+
+        const downloadCoverLetterDocx = async () => {
+            const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+            const fileName = `Cover_Letter_${safeName}.docx`;
+            const res = await fetch('/.netlify/functions/cover-letter-docx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snapshot: data, fileName })
+            });
+            if (!res.ok) {
+                const msg = await res.text().catch(() => '');
+                throw new Error(msg || 'Failed to generate Word cover letter');
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        };
+
+        // Local dev: bypass payment gateway entirely.
+        if (typeof PAYMENTS_ENABLED !== 'undefined' && !PAYMENTS_ENABLED) {
+            if (product === 'cover') {
+                await downloadCoverLetterDocx();
+                saveCvSnapshot().catch(() => {});
+                showToast('Downloaded Cover Letter (Word) — testing mode.', 'success');
+                if (loadingSpan) loadingSpan.style.display = 'none';
+                if (textSpan) textSpan.style.display = 'inline';
+                scheduleEntitlementUiRefresh();
+                return;
+            }
+            const pdf = generatePDF(data);
+            const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+            const fileName = `CV_${safeName}.pdf`;
+            pdf.save(fileName);
+
+            if (product === 'bundle') {
+                downloadCoverLetterDocx().catch(() => {});
+            }
+
+            saveCvSnapshot().catch(() => {});
+            showToast(`Downloaded ${label} (testing mode: payment bypassed).`, 'success');
+            if (loadingSpan) loadingSpan.style.display = 'none';
+            if (textSpan) textSpan.style.display = 'inline';
+            scheduleEntitlementUiRefresh();
+            return;
+        }
+
+        // Logged-in users: if the selection hasn't changed since last successful payment,
         // allow a free re-download.
-        let currentHash = null;
+        let cvHash = null;
+        let coverHash = null;
         if (user) {
-            const canonical = getCanonicalSnapshotForBilling();
-            currentHash = await sha256Hex(stableStringify(canonical));
+            cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
+            coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
             const ent = await getEntitlement();
-            const canFreeDownload = Boolean(ent?.paidHash) && ent.paidHash === currentHash;
+
+            const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
+            const coverOk = Boolean(ent?.paidCoverHash) && ent.paidCoverHash === coverHash;
+            const canFreeDownload = product === 'bundle' ? (cvOk && coverOk) : product === 'cover' ? coverOk : cvOk;
 
             if (canFreeDownload) {
-                const pdf = generatePDF(data);
-                const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
-                pdf.save(fileName);
+                if (product === 'cover') {
+                    await downloadCoverLetterDocx();
+                } else {
+                    const pdf = generatePDF(data);
+                    const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                    pdf.save(`CV_${safeName}.pdf`);
+                    if (product === 'bundle') {
+                        downloadCoverLetterDocx().catch(() => {});
+                    }
+                }
                 saveCvSnapshot().catch(() => {});
-                showToast('Downloaded (free re-download).', 'success');
+                showToast(`Downloaded ${label} (free re-download).`, 'success');
                 if (loadingSpan) loadingSpan.style.display = 'none';
                 if (textSpan) textSpan.style.display = 'inline';
                 scheduleEntitlementUiRefresh();
@@ -2183,7 +2638,7 @@ async function handleDownload() {
             key: LENCO_PUBLIC_KEY,
             reference: reference,
             email: data.personalInfo.email,
-            amount: 50,
+            amount: amountZmw,
             currency: 'ZMW',
             channels: ['mobile-money'],
             customer: {
@@ -2191,19 +2646,51 @@ async function handleDownload() {
                 phone: data.personalInfo.phone
             },
             onSuccess: function(response) {
-                showToast('Payment successful! Generating your CV...', 'success');
+                showToast(`Payment successful! Generating your ${label}...`, 'success');
+
+                if (product === 'cover') {
+                    downloadCoverLetterDocx().then(
+                        () => {
+                            if (user) {
+                                markPaidForCurrentPurchase({ product, cvHash, coverHash }, {
+                                    provider: 'lenco',
+                                    reference,
+                                    amount: amountZmw,
+                                    currency: 'ZMW',
+                                    status: 'paid'
+                                }).then(
+                                    () => scheduleEntitlementUiRefresh(),
+                                    () => {}
+                                );
+                                saveCvSnapshot().catch(() => {});
+                            }
+                            showToast('Cover letter downloaded (Word).', 'success');
+                        },
+                        (e) => {
+                            showToast(e?.message || 'Failed to download cover letter (Word).', 'error');
+                        }
+                    ).finally(() => {
+                        if (loadingSpan) loadingSpan.style.display = 'none';
+                        if (textSpan) textSpan.style.display = 'inline';
+                    });
+                    return;
+                }
                 
-                // Generate PDF
                 const pdf = generatePDF(data);
-                const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+                const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                const fileName = `CV_${safeName}.pdf`;
                 pdf.save(fileName);
 
-                if (user && currentHash) {
-                    // Mark this CV version as paid for future free re-downloads.
-                    markPaidForCurrentSnapshot(currentHash, {
+                // For bundle: also provide the editable Word cover letter.
+                if (product === 'bundle') {
+                    downloadCoverLetterDocx().catch(() => {});
+                }
+
+                if (user) {
+                    markPaidForCurrentPurchase({ product, cvHash, coverHash }, {
                         provider: 'lenco',
                         reference,
-                        amount: 50,
+                        amount: amountZmw,
                         currency: 'ZMW',
                         status: 'paid'
                     }).then(
@@ -2211,19 +2698,17 @@ async function handleDownload() {
                         () => {}
                     );
 
-                    // Save snapshot for future use.
                     saveCvSnapshot().catch(() => {});
                 } else {
-                    // One-off download (no login): invite signup after download.
                     setTimeout(() => {
                         try {
-                            const ok = window.confirm('Downloaded! Want to sign up to save this CV and re-download for free next time?');
+                            const ok = window.confirm('Downloaded! Want to sign up to save and re-download for free next time?');
                             if (ok) openSignup();
                         } catch {}
                     }, 200);
                 }
                 
-                showToast('CV downloaded successfully!', 'success');
+                showToast(`${label} downloaded successfully!`, 'success');
                 if (loadingSpan) loadingSpan.style.display = 'none';
                 if (textSpan) textSpan.style.display = 'inline';
             },
@@ -2233,26 +2718,40 @@ async function handleDownload() {
                 if (textSpan) textSpan.style.display = 'inline';
             },
             onConfirmationPending: function() {
-                showToast('Payment pending. We will process your CV once confirmed.', 'info');
+                showToast('Payment pending. We will process your download once confirmed.', 'info');
                 
                 // Generate PDF anyway after a delay
                 setTimeout(() => {
+                    if (product === 'cover') {
+                        downloadCoverLetterDocx().then(
+                            () => showToast('Cover letter downloaded (Word). Payment confirmation pending.', 'success'),
+                            () => showToast('Cover letter download failed (Word).', 'error')
+                        ).finally(() => {
+                            if (loadingSpan) loadingSpan.style.display = 'none';
+                            if (textSpan) textSpan.style.display = 'inline';
+                        });
+                        return;
+                    }
                     const pdf = generatePDF(data);
-                    const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+                    const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                    const fileName = `CV_${safeName}.pdf`;
                     pdf.save(fileName);
 
+                    if (product === 'bundle') {
+                        downloadCoverLetterDocx().catch(() => {});
+                    }
+
                     if (user) {
-                        // Save snapshot for future use, but do NOT mark as paid while pending.
                         saveCvSnapshot().catch(() => {});
                     } else {
                         setTimeout(() => {
                             try {
-                                const ok = window.confirm('Downloaded! Want to sign up to save this CV and re-download for free next time?');
+                                const ok = window.confirm('Downloaded! Want to sign up to save and re-download for free next time?');
                                 if (ok) openSignup();
                             } catch {}
                         }, 200);
                     }
-                    showToast('CV downloaded! Payment confirmation pending.', 'success');
+                    showToast(`${label} downloaded! Payment confirmation pending.`, 'success');
                     if (loadingSpan) loadingSpan.style.display = 'none';
                     if (textSpan) textSpan.style.display = 'inline';
                 }, 3000);
@@ -2302,19 +2801,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Live preview updates on typing
-    const previewIds = [
-        'fullName','email','phone','profession','yearsExperience','specialization',
-        'address','city','country','summary'
-    ];
-    previewIds.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('input', schedulePreviewUpdate);
-            el.addEventListener('change', schedulePreviewUpdate);
-        }
-    });
+
+    const profileLinks = document.getElementById('profileLinks');
+    if (profileLinks) {
+        profileLinks.addEventListener('change', () => {
+            updateProfileLinksUi();
+            schedulePreviewUpdate();
+        });
+    }
+    updateProfileLinksUi();
+
+    const coverCompanyAddress = document.getElementById('coverCompanyAddress');
+    if (coverCompanyAddress) {
+        coverCompanyAddress.addEventListener('input', schedulePreviewUpdate);
+        coverCompanyAddress.addEventListener('change', schedulePreviewUpdate);
+    }
 
     const hobbyInput = document.getElementById('hobbyInput');
     if (hobbyInput) {
@@ -2333,7 +2834,9 @@ document.addEventListener('DOMContentLoaded', function() {
     renderReferences();
 
     updatePreview();
+    scheduleEntitlementUiRefresh();
 
     // Wizard UI (step-by-step navigation)
     initWizard();
+    setAppMode('cv');
 });

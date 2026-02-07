@@ -163,6 +163,70 @@ header p {
     justify-content: center;
 }
 
+/* Make feature chips look informational, not like CTAs */
+.brand-pills .pill {
+    cursor: default;
+    user-select: none;
+}
+
+    .header-cta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    justify-content: center;
+    }
+
+.btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: auto;
+    margin-top: 0;
+    border: 0;
+    cursor: pointer;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #2563eb 0%, #f97316 100%);
+    box-shadow:
+        0 14px 34px rgba(37, 99, 235, 0.22),
+        0 12px 26px rgba(249, 115, 22, 0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn-cta:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.02);
+    box-shadow:
+        0 18px 44px rgba(37, 99, 235, 0.28),
+        0 16px 34px rgba(249, 115, 22, 0.22);
+}
+
+.btn-cta:active {
+    transform: translateY(0px);
+}
+
+.btn-cta:focus {
+    outline: 3px solid rgba(255, 255, 255, 0.35);
+    outline-offset: 2px;
+}
+
+    @media (max-width: 520px) {
+        .header-cta {
+            width: 100%;
+        }
+        .btn-cta {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
 .pill {
     display: inline-flex;
     align-items: center;
@@ -274,6 +338,54 @@ main {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.download-products {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+.download-products-title {
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.download-product {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(0,0,0,.12);
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.download-product:last-child {
+    margin-bottom: 0;
+}
+
+.download-product input {
+    margin: 0;
+}
+
+.download-product-main {
+    font-weight: 700;
+}
+
+.download-product-meta {
+    font-size: 12px;
+    opacity: .9;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(59,130,246,.15);
+    border: 1px solid rgba(59,130,246,.25);
+    white-space: nowrap;
 }
 
 .wizard-step:hover {
@@ -558,6 +670,25 @@ main {
     color: #111827;
     font-size: 12.5px;
     line-height: 1.35;
+}
+
+.letter-preview {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #111827;
+}
+
+.letter-line {
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.letter-strong {
+    font-weight: 800;
+}
+
+.letter-blank {
+    height: 10px;
 }
 
 .cv-preview .cv-name {

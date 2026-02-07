@@ -49,7 +49,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify({ ok: true, paidHash: null, paidAt: null })
+      body: JSON.stringify({ ok: true, paidHash: null, paidCvHash: null, paidCoverHash: null, paidAt: null })
     };
   }
 
@@ -66,6 +66,8 @@ exports.handler = async (event, context) => {
     body: JSON.stringify({
       ok: true,
       paidHash: record.paidHash || null,
+      paidCvHash: record.paidCvHash || record.paidHash || null,
+      paidCoverHash: record.paidCoverHash || null,
       paidAt: record.paidAt || null
     })
   };

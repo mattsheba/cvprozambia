@@ -135,7 +135,32 @@ exports.handler = async (event, context) => {
   }
 
   const salesCount = salesKeys.length;
-  const revenueZmw = Number.isFinite(priceZmw) ? salesCount * priceZmw : salesCount * 50;
+
+  // Revenue: sum logged sale amounts (best-effort). To avoid timeouts,
+  // cap how many sales records we fetch.
+  const MAX_REVENUE_SALES = 1000;
+  const revenueKeys = salesKeys.length > MAX_REVENUE_SALES ? salesKeys.slice(-MAX_REVENUE_SALES) : salesKeys;
+  const revenueIsPartial = salesKeys.length > revenueKeys.length;
+
+  let revenueZmw = 0;
+  let revenueCount = 0;
+  for (const key of revenueKeys) {
+    try {
+      const raw = await store.get(key);
+      const rec = raw ? JSON.parse(raw) : null;
+      const amt = Number(rec?.amount);
+      if (Number.isFinite(amt)) {
+        revenueZmw += amt;
+        revenueCount += 1;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!Number.isFinite(revenueZmw) || revenueCount === 0) {
+    revenueZmw = Number.isFinite(priceZmw) ? salesCount * priceZmw : salesCount * 50;
+  }
 
   return {
     statusCode: 200,
@@ -147,6 +172,7 @@ exports.handler = async (event, context) => {
       paidUsers: paidUsers.size,
       salesCount,
       revenueZmw,
+      revenueIsPartial,
       recentSales
     })
   };

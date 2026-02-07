@@ -431,21 +431,113 @@ function getCanonicalSnapshotForBilling() {
     };
 }
 
-let entitlementCache = { paidHash: null, paidAt: null, fetchedAt: 0 };
+function getCanonicalSnapshotForCvBilling() {
+    const s = collectCVData();
+    return {
+        personalInfo: s.personalInfo,
+        includeReferences: Boolean(s.includeReferences),
+        skills: Array.isArray(s.skills) ? s.skills : [],
+        hobbies: Array.isArray(s.hobbies) ? s.hobbies : [],
+        experience: Array.isArray(s.experience)
+            ? s.experience.map((e) => ({
+                title: e?.title || '',
+                company: e?.company || '',
+                location: e?.location || '',
+                startDate: e?.startDate || '',
+                endDate: e?.endDate || '',
+                current: Boolean(e?.current),
+                responsibilities: Array.isArray(e?.responsibilities) ? e.responsibilities : []
+            }))
+            : [],
+        education: Array.isArray(s.education)
+            ? s.education.map((e) => ({
+                degree: e?.degree || '',
+                institution: e?.institution || '',
+                location: e?.location || '',
+                graduationDate: e?.graduationDate || ''
+            }))
+            : [],
+        certifications: Array.isArray(s.certifications)
+            ? s.certifications.map((c) => ({
+                name: c?.name || '',
+                issuer: c?.issuer || '',
+                year: c?.year || ''
+            }))
+            : [],
+        languages: Array.isArray(s.languages)
+            ? s.languages.map((l) => ({
+                language: l?.language || '',
+                proficiency: l?.proficiency || ''
+            }))
+            : [],
+        references: Array.isArray(s.references)
+            ? s.references.map((r) => ({
+                name: r?.name || '',
+                title: r?.title || '',
+                organization: r?.organization || '',
+                phone: r?.phone || '',
+                email: r?.email || ''
+            }))
+            : []
+    };
+}
+
+function getCanonicalSnapshotForCoverBilling() {
+    const s = collectCVData();
+    return {
+        personalInfo: s.personalInfo,
+        coverLetter: {
+            role: String(s?.coverLetterRole || ''),
+            company: String(s?.coverLetterCompany || ''),
+            text: String(s?.coverLetterText || '')
+        }
+    };
+}
+
+function getSelectedDownloadProduct() {
+    const checked = document.querySelector('input[name="downloadProduct"]:checked');
+    const v = (checked?.value || 'cv').toString();
+    if (v === 'cv' || v === 'cover' || v === 'bundle') return v;
+    return 'cv';
+}
+
+function getPriceZmwForProduct(product) {
+    const cvPrice = typeof CV_PRICE_ZMW !== 'undefined' ? Number(CV_PRICE_ZMW) : 50;
+    const coverPrice = typeof COVER_LETTER_PRICE_ZMW !== 'undefined' ? Number(COVER_LETTER_PRICE_ZMW) : 30;
+    const bundlePrice = typeof BUNDLE_PRICE_ZMW !== 'undefined' ? Number(BUNDLE_PRICE_ZMW) : 70;
+
+    if (product === 'cover') return Number.isFinite(coverPrice) ? coverPrice : 30;
+    if (product === 'bundle') return Number.isFinite(bundlePrice) ? bundlePrice : 70;
+    return Number.isFinite(cvPrice) ? cvPrice : 50;
+}
+
+let entitlementCache = { paidHash: null, paidCvHash: null, paidCoverHash: null, paidAt: null, fetchedAt: 0 };
 async function getEntitlement() {
     const user = getCurrentUser();
-    if (!user) return { paidHash: null, paidAt: null };
+    if (!user) return { paidHash: null, paidCvHash: null, paidCoverHash: null, paidAt: null };
     const now = Date.now();
     if (entitlementCache.fetchedAt && now - entitlementCache.fetchedAt < 15_000) {
-        return { paidHash: entitlementCache.paidHash, paidAt: entitlementCache.paidAt };
+        return {
+            paidHash: entitlementCache.paidHash,
+            paidCvHash: entitlementCache.paidCvHash,
+            paidCoverHash: entitlementCache.paidCoverHash,
+            paidAt: entitlementCache.paidAt
+        };
     }
     const data = await fetchWithAuth('/.netlify/functions/cv-entitlement', { method: 'GET' });
     entitlementCache = {
         paidHash: data?.paidHash || null,
+        paidCvHash: data?.paidCvHash || data?.paidHash || null,
+        paidCoverHash: data?.paidCoverHash || null,
         paidAt: data?.paidAt || null,
         fetchedAt: now
     };
-    return { paidHash: entitlementCache.paidHash, paidAt: entitlementCache.paidAt };
+    return {
+        paidHash: entitlementCache.paidHash,
+        paidCvHash: entitlementCache.paidCvHash,
+        paidCoverHash: entitlementCache.paidCoverHash,
+        paidAt: entitlementCache.paidAt
+    };
 }
 
 async function markPaidForCurrentSnapshot(snapshotHash, payment = null) {
@@ -453,7 +545,34 @@ async function markPaidForCurrentSnapshot(snapshotHash, payment = null) {
         method: 'POST',
         body: JSON.stringify({ snapshotHash, payment })
     });
-    entitlementCache = { paidHash: data?.paidHash || snapshotHash, paidAt: data?.paidAt || null, fetchedAt: Date.now() };
+    entitlementCache = {
+        paidHash: data?.paidHash || snapshotHash,
+        paidCvHash: data?.paidCvHash || data?.paidHash || snapshotHash,
+        paidCoverHash: data?.paidCoverHash || null,
+        paidAt: data?.paidAt || null,
+        fetchedAt: Date.now()
+    };
+    return data;
+}
+
+async function markPaidForCurrentPurchase(purchase, payment = null) {
+    const payload = {
+        product: purchase?.product || 'cv',
+        cvHash: purchase?.cvHash || null,
+        coverHash: purchase?.coverHash || null,
+        payment
+    };
+    const data = await fetchWithAuth('/.netlify/functions/cv-mark-paid', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+    entitlementCache = {
+        paidHash: data?.paidHash || entitlementCache.paidHash || null,
+        paidCvHash: data?.paidCvHash || entitlementCache.paidCvHash || null,
+        paidCoverHash: data?.paidCoverHash || entitlementCache.paidCoverHash || null,
+        paidAt: data?.paidAt || null,
+        fetchedAt: Date.now()
+    };
     return data;
 }
 
@@ -471,23 +590,42 @@ async function refreshEntitlementUi() {
     const downloadText = document.getElementById('downloadText');
     const statusEl = document.getElementById('accountStatus');
 
+    // Keep price labels in sync
+    try {
+        const elCv = document.getElementById('priceCv');
+        const elCover = document.getElementById('priceCover');
+        const elBundle = document.getElementById('priceBundle');
+        if (elCv) elCv.textContent = `ZMW ${getPriceZmwForProduct('cv')}`;
+        if (elCover) elCover.textContent = `ZMW ${getPriceZmwForProduct('cover')}`;
+        if (elBundle) elBundle.textContent = `ZMW ${getPriceZmwForProduct('bundle')}`;
+    } catch {}
+
+    const product = getSelectedDownloadProduct();
+    const amountZmw = getPriceZmwForProduct(product);
+    const label = product === 'cover' ? 'Cover Letter' : product === 'bundle' ? 'Bundle' : 'CV';
+
     if (!user) {
-        if (downloadText) downloadText.textContent = '💰 Pay ZMW 50 & Download CV';
+        if (downloadText) downloadText.textContent = `💰 Pay ZMW ${amountZmw} & Download ${label}`;
         return;
     }
 
-    const canonical = getCanonicalSnapshotForBilling();
-    const hash = await sha256Hex(stableStringify(canonical));
+    const cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
+    const coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
     const ent = await getEntitlement();
-    const isFree = Boolean(ent?.paidHash) && ent.paidHash === hash;
+
+    const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
+    const coverOk = Boolean(ent?.paidCoverHash) && ent.paidCoverHash === coverHash;
+    const isFree = product === 'bundle' ? (cvOk && coverOk) : product === 'cover' ? coverOk : cvOk;
 
     if (downloadText) {
-        downloadText.textContent = isFree ? '⬇️ Download CV (Free re-download)' : '💰 Pay ZMW 50 & Download CV';
+        downloadText.textContent = isFree
+            ? `⬇️ Download ${label} (Free re-download)`
+            : `💰 Pay ZMW ${amountZmw} & Download ${label}`;
     }
 
     if (statusEl) {
         const base = statusEl.textContent.split(' • ')[0];
-        statusEl.textContent = `${base} • ${isFree ? 'Free re-download enabled' : 'Edits detected: payment required to download'}`;
+        statusEl.textContent = `${base} • ${isFree ? 'Free re-download enabled for this selection' : 'Edits detected: payment required to download'}`;
     }
 }
 
@@ -1790,14 +1928,68 @@ function collectCVData() {
 }
 
 // Generate PDF (Client-side using jsPDF)
-function generatePDF(data) {
+function generatePDF(data, options = {}) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
+    const includeCv = options?.includeCv !== false;
+    const includeCoverLetter =
+        typeof options?.includeCoverLetter === 'boolean'
+            ? options.includeCoverLetter
+            : Boolean(data.includeCoverLetter);
     
     let yPos = 20;
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     const contentWidth = pageWidth - 2 * margin;
+
+    if (!includeCv) {
+        const headerName = (data.personalInfo.fullName || '').trim() || 'Your Name';
+        const headerContact = [
+            (data.personalInfo.email || '').trim(),
+            (data.personalInfo.phone || '').trim(),
+            [data.personalInfo.city, data.personalInfo.country].filter(Boolean).join(', ')
+        ].filter(Boolean).join(' • ');
+
+        doc.setFontSize(18);
+        doc.setTextColor(0, 0, 0);
+        doc.text(headerName, margin, yPos);
+        yPos += 8;
+
+        if (headerContact) {
+            doc.setFontSize(10);
+            doc.text(headerContact, margin, yPos);
+            yPos += 10;
+        } else {
+            yPos += 6;
+        }
+
+        const role = String(data.coverLetterRole || '').trim();
+        const company = String(data.coverLetterCompany || '').trim();
+        const meta = [role || 'Cover Letter', company].filter(Boolean).join(' — ');
+
+        doc.setFontSize(13);
+        doc.text(meta, margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        const body = String(data.coverLetterText || '').trim();
+        const bodyLines = doc.splitTextToSize(body || ' ', contentWidth);
+        for (const line of bodyLines) {
+            if (yPos > 275) {
+                doc.addPage();
+                yPos = 20;
+            }
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        }
+
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text('Powered by Glamified Systems • CVPro Zambia', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        return doc;
+    }
     
     // Header (ATS-friendly: keep it simple)
     doc.setFontSize(22);
@@ -2050,8 +2242,8 @@ function generatePDF(data) {
     }
 
     // Cover Letter (Optional)
-    if (data.includeCoverLetter && String(data.coverLetterText || '').trim()) {
-        doc.addPage();
+    if (includeCoverLetter && String(data.coverLetterText || '').trim()) {
+        if (includeCv) doc.addPage();
         yPos = 20;
 
         const headerName = (data.personalInfo.fullName || '').trim() || 'Your Name';
@@ -2149,26 +2341,48 @@ async function handleDownload() {
     if (textSpan) textSpan.style.display = 'none';
     
     try {
-        const reference = 'CV-' + Date.now();
+        const product = getSelectedDownloadProduct();
+        const amountZmw = getPriceZmwForProduct(product);
+        const label = product === 'cover' ? 'Cover Letter' : product === 'bundle' ? 'Bundle' : 'CV';
+        const reference = (product === 'cover' ? 'COVER' : product === 'bundle' ? 'BUNDLE' : 'CV') + '-' + Date.now();
 
         // Load heavy 3rd-party scripts only when the user downloads.
         await ensureJsPdfLoaded();
 
-        // Logged-in users: if the CV hasn't changed since the last successful payment,
+        if (product !== 'cv' && !String(data.coverLetterText || '').trim()) {
+            showToast('Please add a cover letter before downloading this option.', 'error');
+            if (loadingSpan) loadingSpan.style.display = 'none';
+            if (textSpan) textSpan.style.display = 'inline';
+            return;
+        }
+
+        // Logged-in users: if the selection hasn't changed since last successful payment,
         // allow a free re-download.
-        let currentHash = null;
+        let cvHash = null;
+        let coverHash = null;
         if (user) {
-            const canonical = getCanonicalSnapshotForBilling();
-            currentHash = await sha256Hex(stableStringify(canonical));
+            cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
+            coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
             const ent = await getEntitlement();
-            const canFreeDownload = Boolean(ent?.paidHash) && ent.paidHash === currentHash;
+
+            const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
+            const coverOk = Boolean(ent?.paidCoverHash) && ent.paidCoverHash === coverHash;
+            const canFreeDownload = product === 'bundle' ? (cvOk && coverOk) : product === 'cover' ? coverOk : cvOk;
 
             if (canFreeDownload) {
-                const pdf = generatePDF(data);
-                const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+                const includeCv = product !== 'cover';
+                const includeCoverLetter = product !== 'cv';
+                const pdf = generatePDF(data, { includeCv, includeCoverLetter });
+                const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                const fileName =
+                    product === 'cover'
+                        ? `Cover_Letter_${safeName}.pdf`
+                        : product === 'bundle'
+                            ? `CV_and_Cover_Letter_${safeName}.pdf`
+                            : `CV_${safeName}.pdf`;
                 pdf.save(fileName);
                 saveCvSnapshot().catch(() => {});
-                showToast('Downloaded (free re-download).', 'success');
+                showToast(`Downloaded ${label} (free re-download).`, 'success');
                 if (loadingSpan) loadingSpan.style.display = 'none';
                 if (textSpan) textSpan.style.display = 'inline';
                 scheduleEntitlementUiRefresh();
@@ -2183,7 +2397,7 @@ async function handleDownload() {
             key: LENCO_PUBLIC_KEY,
             reference: reference,
             email: data.personalInfo.email,
-            amount: 50,
+            amount: amountZmw,
             currency: 'ZMW',
             channels: ['mobile-money'],
             customer: {
@@ -2191,19 +2405,25 @@ async function handleDownload() {
                 phone: data.personalInfo.phone
             },
             onSuccess: function(response) {
-                showToast('Payment successful! Generating your CV...', 'success');
+                showToast(`Payment successful! Generating your ${label}...`, 'success');
                 
-                // Generate PDF
-                const pdf = generatePDF(data);
-                const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+                const includeCv = product !== 'cover';
+                const includeCoverLetter = product !== 'cv';
+                const pdf = generatePDF(data, { includeCv, includeCoverLetter });
+                const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                const fileName =
+                    product === 'cover'
+                        ? `Cover_Letter_${safeName}.pdf`
+                        : product === 'bundle'
+                            ? `CV_and_Cover_Letter_${safeName}.pdf`
+                            : `CV_${safeName}.pdf`;
                 pdf.save(fileName);
 
-                if (user && currentHash) {
-                    // Mark this CV version as paid for future free re-downloads.
-                    markPaidForCurrentSnapshot(currentHash, {
+                if (user) {
+                    markPaidForCurrentPurchase({ product, cvHash, coverHash }, {
                         provider: 'lenco',
                         reference,
-                        amount: 50,
+                        amount: amountZmw,
                         currency: 'ZMW',
                         status: 'paid'
                     }).then(
@@ -2211,19 +2431,17 @@ async function handleDownload() {
                         () => {}
                     );
 
-                    // Save snapshot for future use.
                     saveCvSnapshot().catch(() => {});
                 } else {
-                    // One-off download (no login): invite signup after download.
                     setTimeout(() => {
                         try {
-                            const ok = window.confirm('Downloaded! Want to sign up to save this CV and re-download for free next time?');
+                            const ok = window.confirm('Downloaded! Want to sign up to save and re-download for free next time?');
                             if (ok) openSignup();
                         } catch {}
                     }, 200);
                 }
                 
-                showToast('CV downloaded successfully!', 'success');
+                showToast(`${label} downloaded successfully!`, 'success');
                 if (loadingSpan) loadingSpan.style.display = 'none';
                 if (textSpan) textSpan.style.display = 'inline';
             },
@@ -2233,26 +2451,33 @@ async function handleDownload() {
                 if (textSpan) textSpan.style.display = 'inline';
             },
             onConfirmationPending: function() {
-                showToast('Payment pending. We will process your CV once confirmed.', 'info');
+                showToast('Payment pending. We will process your download once confirmed.', 'info');
                 
                 // Generate PDF anyway after a delay
                 setTimeout(() => {
-                    const pdf = generatePDF(data);
-                    const fileName = `CV_${data.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+                    const includeCv = product !== 'cover';
+                    const includeCoverLetter = product !== 'cv';
+                    const pdf = generatePDF(data, { includeCv, includeCoverLetter });
+                    const safeName = data.personalInfo.fullName.replace(/\s+/g, '_');
+                    const fileName =
+                        product === 'cover'
+                            ? `Cover_Letter_${safeName}.pdf`
+                            : product === 'bundle'
+                                ? `CV_and_Cover_Letter_${safeName}.pdf`
+                                : `CV_${safeName}.pdf`;
                     pdf.save(fileName);
 
                     if (user) {
-                        // Save snapshot for future use, but do NOT mark as paid while pending.
                         saveCvSnapshot().catch(() => {});
                     } else {
                         setTimeout(() => {
                             try {
-                                const ok = window.confirm('Downloaded! Want to sign up to save this CV and re-download for free next time?');
+                                const ok = window.confirm('Downloaded! Want to sign up to save and re-download for free next time?');
                                 if (ok) openSignup();
                             } catch {}
                         }, 200);
                     }
-                    showToast('CV downloaded! Payment confirmation pending.', 'success');
+                    showToast(`${label} downloaded! Payment confirmation pending.`, 'success');
                     if (loadingSpan) loadingSpan.style.display = 'none';
                     if (textSpan) textSpan.style.display = 'inline';
                 }, 3000);

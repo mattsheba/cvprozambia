@@ -54,12 +54,28 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const snapshotHash = (payload?.snapshotHash || '').toString().trim();
-  if (!snapshotHash || snapshotHash.length < 16 || snapshotHash.length > 128) {
+  const product = (payload?.product || '').toString().trim() || null;
+  const cvHash = (payload?.cvHash || '').toString().trim() || null;
+  const coverHash = (payload?.coverHash || '').toString().trim() || null;
+  const snapshotHash = (payload?.snapshotHash || '').toString().trim() || null;
+
+  const isValidHash = (h) => typeof h === 'string' && h.length >= 16 && h.length <= 128;
+
+  // Backward compatible: old client sends { snapshotHash }
+  // New client sends { product, cvHash, coverHash }
+  if (!isValidHash(snapshotHash) && !isValidHash(cvHash) && !isValidHash(coverHash)) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'Missing or invalid snapshotHash' })
+      body: JSON.stringify({ error: 'Missing purchase hash (snapshotHash/cvHash/coverHash)' })
+    };
+  }
+
+  if (product && !['cv', 'cover', 'bundle'].includes(product)) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'Invalid product' })
     };
   }
 
@@ -70,7 +86,11 @@ exports.handler = async (event, context) => {
   const status = (payment?.status || 'paid').toString().trim() || 'paid';
 
   const record = {
-    paidHash: snapshotHash,
+    // paidHash kept for backwards compatibility with older clients
+    paidHash: snapshotHash || cvHash || coverHash,
+    paidCvHash: cvHash || snapshotHash || null,
+    paidCoverHash: coverHash || null,
+    lastProduct: product || (coverHash && cvHash ? 'bundle' : coverHash ? 'cover' : 'cv'),
     paidAt: new Date().toISOString()
   };
 
@@ -80,7 +100,8 @@ exports.handler = async (event, context) => {
 
   // Best-effort sales logging (for admin dashboard). This is not a payment verification.
   const tsSafe = record.paidAt.replace(/[:.]/g, '-');
-  const saleKey = `sales/${tsSafe}_${userId}_${snapshotHash.slice(0, 10)}.json`;
+  const keyHashPart = (record.paidHash || 'unknown').slice(0, 10);
+  const saleKey = `sales/${tsSafe}_${userId}_${keyHashPart}.json`;
   const saleRecord = {
     paidAt: record.paidAt,
     userId,
@@ -89,7 +110,10 @@ exports.handler = async (event, context) => {
     currency,
     reference: reference || null,
     status,
-    snapshotHash
+    product: record.lastProduct,
+    cvHash: record.paidCvHash,
+    coverHash: record.paidCoverHash,
+    snapshotHash: snapshotHash || null
   };
   await store.set(saleKey, JSON.stringify(saleRecord));
 

@@ -40,7 +40,7 @@
         }
         </script>
     <title>CVPro Zambia - ATS-Friendly CV Builder</title>
-    <link rel="stylesheet" href="css/styles.v20260205.2.css">
+    <link rel="stylesheet" href="css/styles.v20260205.3.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -65,6 +65,12 @@
                         <span class="pill">PDF export</span>
                         <span class="pill">Zambia-ready</span>
                     </div>
+
+                    <div class="header-cta" aria-label="Quick start">
+                        <button type="button" class="btn-cta" onclick="startCvBuilder()">Build a CV</button>
+                        <button type="button" class="btn-cta" onclick="startCoverLetterOnly()">Create Cover Letter</button>
+                    </div>
+                    <p class="help-text" id="coverOnlyQuickHint" style="margin-top:8px;">Tip: You can create a cover letter without filling the full CV.</p>
                 </div>
             </div>
         </header>
@@ -90,22 +96,22 @@
                         <input type="email" id="email" placeholder="john@example.com" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" data-mode="cv">
                         <label for="phone">Phone Number *</label>
                         <input type="tel" id="phone" placeholder="+260 XXX XXX XXX" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" data-mode="cv">
                         <label for="profession">Profession *</label>
                         <input type="text" id="profession" placeholder="e.g., Teacher, Nurse, Engineer">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" data-mode="cv">
                         <label for="yearsExperience">Years of Experience</label>
                         <input type="number" id="yearsExperience" min="0" placeholder="5">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" data-mode="cv">
                         <label for="specialization">Specialization (Optional)</label>
                         <input type="text" id="specialization" placeholder="e.g., Pediatric Care, Web Development">
                     </div>
@@ -127,7 +133,7 @@
                     </div>
                 </section>
 
-                <section class="form-step" data-title="Professional Summary">
+                <section class="form-step" data-title="Professional Summary" data-mode="cv">
                     <h2>Professional Summary</h2>
                     <div class="form-group">
                         <label for="summary">Professional Summary</label>
@@ -150,7 +156,7 @@
                     </div>
                 </section>
 
-                <section class="form-step" data-title="Skills">
+                <section class="form-step" data-title="Skills" data-mode="cv">
                     <h2>Skills</h2>
                     <div class="form-group">
                         <label for="skillInput">Add Skills</label>
@@ -177,32 +183,70 @@
                     </div>
                 </section>
 
-                <section class="form-step" data-title="Work Experience">
+                <section class="form-step" data-title="Work Experience" data-mode="cv">
                     <h2>Work Experience</h2>
                     <div id="experienceList"></div>
                     <button type="button" class="btn-secondary" onclick="addExperience()">+ Add Experience</button>
                 </section>
 
-                <section class="form-step" data-title="Education">
+                <section class="form-step" data-title="Education" data-mode="cv">
                     <h2>Education</h2>
                     <div id="educationList"></div>
                     <button type="button" class="btn-secondary" onclick="addEducation()">+ Add Education</button>
                 </section>
 
-                <section class="form-step" data-title="Certifications & Licensing">
+                <section class="form-step" data-title="Activities & Honors" data-mode="cv">
+                    <h2>Activities & Honors (Optional)</h2>
+                    <div id="activitiesHonorsList"></div>
+                    <button type="button" class="btn-secondary" onclick="addActivityHonor()">+ Add Activity/Honor</button>
+                    <p class="help-text">Tip: Include leadership, volunteering, awards, or notable achievements.</p>
+                </section>
+
+                <section class="form-step" data-title="Websites & Profiles" data-mode="cv">
+                    <h2>Websites, Portfolios & Profiles (Optional)</h2>
+
+                    <div class="form-group">
+                        <label for="websiteUrl">Website (Optional)</label>
+                        <input type="url" id="websiteUrl" placeholder="https://yourwebsite.com" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="portfolioUrl">Portfolio (Optional)</label>
+                        <input type="url" id="portfolioUrl" placeholder="https://portfolio.com/yourname" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group" id="linkedinWrap" data-mode="cv">
+                        <label for="linkedinUrl">LinkedIn URL (Optional)</label>
+                        <input type="url" id="linkedinUrl" placeholder="https://www.linkedin.com/in/yourname" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group" id="githubWrap" data-mode="cv">
+                        <label for="githubUrl">GitHub URL (Optional)</label>
+                        <input type="url" id="githubUrl" placeholder="https://github.com/yourusername" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Other Profiles (Optional)</label>
+                        <div id="otherProfilesList"></div>
+                        <button type="button" class="btn-secondary" onclick="addOtherProfile()">+ Add Other Profile</button>
+                        <p class="help-text">Tip: Add other profiles (Behance, Dribbble, ResearchGate, etc.).</p>
+                    </div>
+                </section>
+
+                <section class="form-step" data-title="Certifications & Licensing" data-mode="cv">
                     <h2>Certifications & Licensing (Optional)</h2>
                     <div id="certificationsList"></div>
                     <button type="button" class="btn-secondary" onclick="addCertification()">+ Add Certification/License</button>
                 </section>
 
-                <section class="form-step" data-title="Languages">
+                <section class="form-step" data-title="Languages" data-mode="cv">
                     <h2>Languages (Optional)</h2>
                     <div id="languagesList"></div>
                     <button type="button" class="btn-secondary" onclick="addLanguage()">+ Add Language</button>
                 </section>
 
-                <section class="form-step" data-title="Hobbies">
-                    <h2>Hobbies (Optional)</h2>
+                <section class="form-step" data-title="Hobbies" data-mode="cv">
+                    <h2>Hobbies & Interests (Optional)</h2>
                     <div class="form-group">
                         <label for="hobbyInput">Add Hobby</label>
                         <div class="skill-input-group">
@@ -213,7 +257,7 @@
                     </div>
                 </section>
 
-                <section class="form-step" data-title="References">
+                <section class="form-step" data-title="References" data-mode="cv">
                     <h2>References (Optional)</h2>
                     <div class="form-group">
                         <label>
@@ -224,6 +268,52 @@
                     </div>
                     <div id="referencesList"></div>
                     <button type="button" class="btn-secondary" onclick="addReference()">+ Add Reference</button>
+                </section>
+
+                <section class="form-step" data-title="Cover Letter">
+                    <h2>Cover Letter (Premium)</h2>
+                    <p class="help-text">Generate a job-tailored cover letter, edit it, then download it as an editable Word document.</p>
+
+                    <div class="form-group">
+                        <label for="coverRole">Target Role (Optional)</label>
+                        <input type="text" id="coverRole" placeholder="e.g., Customer Service Officer" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverCompany">Company (Optional)</label>
+                        <input type="text" id="coverCompany" placeholder="e.g., ABC Bank" oninput="schedulePreviewUpdate()">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverCompanyAddress">Company Address (Optional)</label>
+                        <textarea id="coverCompanyAddress" rows="3" placeholder="Company address (street / P.O. Box, city, country)" oninput="schedulePreviewUpdate()"></textarea>
+                        <p class="help-text">Tip: If you leave this blank, Word download will use placeholders.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverJobDesc">Job Description (Optional)</label>
+                        <textarea id="coverJobDesc" rows="6" placeholder="Paste the job description here for better tailoring..." oninput="schedulePreviewUpdate()"></textarea>
+                        <button type="button" class="btn-ai" onclick="generateCoverLetter()">
+                            <span id="coverLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="coverText">✨ Generate Cover Letter</span>
+                        </button>
+                        <div id="coverSuggestionWrap" class="suggestions-wrap" style="display: none;">
+                            <div class="suggestions-header">
+                                <div class="suggestions-title">Suggested cover letter</div>
+                                <div class="suggestions-actions">
+                                    <button type="button" class="btn-secondary btn-mini" onclick="addGeneratedCoverLetter()">Add</button>
+                                    <button type="button" class="btn-secondary btn-mini" onclick="discardGeneratedCoverLetter()">Clear</button>
+                                </div>
+                            </div>
+                            <div id="coverSuggestionText" class="suggestion-text"></div>
+                        </div>
+                        <p class="help-text">Tip: Edit the letter before downloading.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverLetterText">Cover Letter</label>
+                        <textarea id="coverLetterText" rows="10" placeholder="Your cover letter will appear here..." oninput="schedulePreviewUpdate()"></textarea>
+                    </div>
                 </section>
 
                 <section class="form-step" data-title="Download">
@@ -241,6 +331,26 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="download-products" aria-label="Download options">
+                        <div class="download-products-title">Choose what to download</div>
+                        <label class="download-product" id="productCvOpt">
+                            <input type="radio" name="downloadProduct" value="cv" checked onchange="scheduleEntitlementUiRefresh()">
+                            <span class="download-product-main">CV only</span>
+                            <span class="download-product-meta" id="priceCv">ZMW 50</span>
+                        </label>
+                        <label class="download-product" id="productCoverOpt">
+                            <input type="radio" name="downloadProduct" value="cover" onchange="scheduleEntitlementUiRefresh()">
+                            <span class="download-product-main">Cover letter only</span>
+                            <span class="download-product-meta" id="priceCover">ZMW 30</span>
+                        </label>
+                        <label class="download-product" id="productBundleOpt">
+                            <input type="radio" name="downloadProduct" value="bundle" onchange="scheduleEntitlementUiRefresh()">
+                            <span class="download-product-main">Bundle (CV + cover letter)</span>
+                            <span class="download-product-meta" id="priceBundle">ZMW 70</span>
+                        </label>
+                        <p class="help-text" id="downloadProductHint">Tip: Bundle buyers can re-download each document for free if unchanged.</p>
+                    </div>
                     <div class="form-actions">
                         <button type="button" class="btn-primary" onclick="handleDownload()" id="downloadBtn">
                             <span id="downloadLoading" style="display: none;">⏳ Processing...</span>
@@ -257,7 +367,7 @@
             </div>
 
             <aside class="preview-container" aria-label="CV preview">
-                <h2>Live Preview (ATS-Friendly)</h2>
+                <h2 id="previewTitle">Live Preview (ATS-Friendly)</h2>
                 <div id="cvPreview" class="cv-preview"></div>
                 <p class="help-text">The PDF uses the same content and bullet formatting.</p>
             </aside>
@@ -306,7 +416,7 @@
 
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="js/config.v20260205.js"></script>
-    <script src="js/app-standalone.v20260205.js"></script>
+    <script src="js/config.v20260206.js"></script>
+    <script src="js/app-standalone.v20260206.1.js"></script>
 </body>
 </html>
