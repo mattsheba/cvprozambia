@@ -88,47 +88,47 @@
 
                     <div class="form-group">
                         <label for="fullName">Full Name *</label>
-                        <input type="text" id="fullName" placeholder="John Doe" required>
+                        <input type="text" id="fullName" placeholder="John Doe" required autocomplete="name">
                     </div>
 
                     <div class="form-group">
                         <label for="email">Email *</label>
-                        <input type="email" id="email" placeholder="john@example.com" required>
+                        <input type="email" id="email" placeholder="john@example.com" required autocomplete="email">
                     </div>
 
                     <div class="form-group" data-mode="cv">
                         <label for="phone">Phone Number *</label>
-                        <input type="tel" id="phone" placeholder="+260 XXX XXX XXX" required>
+                        <input type="tel" id="phone" placeholder="+260 XXX XXX XXX" required autocomplete="tel">
                     </div>
 
                     <div class="form-group" data-mode="cv">
                         <label for="profession">Profession *</label>
-                        <input type="text" id="profession" placeholder="e.g., Teacher, Nurse, Engineer">
+                        <input type="text" id="profession" placeholder="e.g., Teacher, Nurse, Engineer" autocomplete="organization-title">
                     </div>
 
                     <div class="form-group" data-mode="cv">
                         <label for="yearsExperience">Years of Experience</label>
-                        <input type="number" id="yearsExperience" min="0" placeholder="5">
+                        <input type="number" id="yearsExperience" min="0" placeholder="5" autocomplete="off">
                     </div>
 
                     <div class="form-group" data-mode="cv">
                         <label for="specialization">Specialization (Optional)</label>
-                        <input type="text" id="specialization" placeholder="e.g., Pediatric Care, Web Development">
+                        <input type="text" id="specialization" placeholder="e.g., Pediatric Care, Web Development" autocomplete="off">
                     </div>
 
                     <div class="form-group">
                         <label for="address">Address</label>
-                        <input type="text" id="address" placeholder="Street Address">
+                        <input type="text" id="address" placeholder="Street Address" autocomplete="street-address">
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="city">City</label>
-                            <input type="text" id="city" placeholder="Lusaka">
+                            <input type="text" id="city" placeholder="Lusaka" autocomplete="address-level2">
                         </div>
                         <div class="form-group">
                             <label for="country">Country</label>
-                            <input type="text" id="country" placeholder="Zambia" value="Zambia">
+                            <input type="text" id="country" placeholder="Zambia" value="Zambia" autocomplete="country">
                         </div>
                     </div>
                 </section>
@@ -161,7 +161,7 @@
                     <div class="form-group">
                         <label for="skillInput">Add Skills</label>
                         <div class="skill-input-group">
-                            <input type="text" id="skillInput" placeholder="e.g., Project Management">
+                            <input type="text" id="skillInput" placeholder="e.g., Project Management" autocomplete="off">
                             <button type="button" onclick="addSkill()">Add</button>
                         </div>
                         <button type="button" class="btn-ai" onclick="generateSkills()">
@@ -207,22 +207,22 @@
 
                     <div class="form-group">
                         <label for="websiteUrl">Website (Optional)</label>
-                        <input type="url" id="websiteUrl" placeholder="https://yourwebsite.com" oninput="schedulePreviewUpdate()">
+                        <input type="url" id="websiteUrl" placeholder="https://yourwebsite.com" autocomplete="url" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group">
                         <label for="portfolioUrl">Portfolio (Optional)</label>
-                        <input type="url" id="portfolioUrl" placeholder="https://portfolio.com/yourname" oninput="schedulePreviewUpdate()">
+                        <input type="url" id="portfolioUrl" placeholder="https://portfolio.com/yourname" autocomplete="url" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group" id="linkedinWrap" data-mode="cv">
                         <label for="linkedinUrl">LinkedIn URL (Optional)</label>
-                        <input type="url" id="linkedinUrl" placeholder="https://www.linkedin.com/in/yourname" oninput="schedulePreviewUpdate()">
+                        <input type="url" id="linkedinUrl" placeholder="https://www.linkedin.com/in/yourname" autocomplete="url" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group" id="githubWrap" data-mode="cv">
                         <label for="githubUrl">GitHub URL (Optional)</label>
-                        <input type="url" id="githubUrl" placeholder="https://github.com/yourusername" oninput="schedulePreviewUpdate()">
+                        <input type="url" id="githubUrl" placeholder="https://github.com/yourusername" autocomplete="url" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group">
@@ -250,7 +250,7 @@
                     <div class="form-group">
                         <label for="hobbyInput">Add Hobby</label>
                         <div class="skill-input-group">
-                            <input type="text" id="hobbyInput" placeholder="e.g., Reading">
+                            <input type="text" id="hobbyInput" placeholder="e.g., Reading" autocomplete="off">
                             <button type="button" onclick="addHobby()">Add</button>
                         </div>
                         <div id="hobbiesList" class="tags-container"></div>
@@ -276,23 +276,23 @@
 
                     <div class="form-group">
                         <label for="coverRole">Target Role (Optional)</label>
-                        <input type="text" id="coverRole" placeholder="e.g., Customer Service Officer" oninput="schedulePreviewUpdate()">
+                        <input type="text" id="coverRole" placeholder="e.g., Customer Service Officer" autocomplete="off" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group">
                         <label for="coverCompany">Company (Optional)</label>
-                        <input type="text" id="coverCompany" placeholder="e.g., ABC Bank" oninput="schedulePreviewUpdate()">
+                        <input type="text" id="coverCompany" placeholder="e.g., ABC Bank" autocomplete="organization" oninput="schedulePreviewUpdate()">
                     </div>
 
                     <div class="form-group">
                         <label for="coverCompanyAddress">Company Address (Optional)</label>
-                        <textarea id="coverCompanyAddress" rows="3" placeholder="Company address (street / P.O. Box, city, country)" oninput="schedulePreviewUpdate()"></textarea>
+                        <textarea id="coverCompanyAddress" rows="3" placeholder="Company address (street / P.O. Box, city, country)" autocomplete="street-address" oninput="schedulePreviewUpdate()"></textarea>
                         <p class="help-text">Tip: If you leave this blank, Word download will use placeholders.</p>
                     </div>
 
                     <div class="form-group">
                         <label for="coverJobDesc">Job Description (Optional)</label>
-                        <textarea id="coverJobDesc" rows="6" placeholder="Paste the job description here for better tailoring..." oninput="schedulePreviewUpdate()"></textarea>
+                        <textarea id="coverJobDesc" rows="6" placeholder="Paste the job description here for better tailoring..." autocomplete="off" oninput="schedulePreviewUpdate()"></textarea>
                         <button type="button" class="btn-ai" onclick="generateCoverLetter()">
                             <span id="coverLoading" class="loading" style="display: none;">⏳ Generating...</span>
                             <span id="coverText">✨ Generate Cover Letter</span>
@@ -312,7 +312,7 @@
 
                     <div class="form-group">
                         <label for="coverLetterText">Cover Letter</label>
-                        <textarea id="coverLetterText" rows="10" placeholder="Your cover letter will appear here..." oninput="schedulePreviewUpdate()"></textarea>
+                        <textarea id="coverLetterText" rows="10" placeholder="Your cover letter will appear here..." autocomplete="off" oninput="schedulePreviewUpdate()"></textarea>
                     </div>
                 </section>
 
