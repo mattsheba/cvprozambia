@@ -147,11 +147,13 @@ function setAppMode(nextMode) {
 }
 
 function startCoverLetterOnly() {
+    document.getElementById('formContainer').style.display = '';
     setAppMode('cover');
     goToWizardStep(0);
 }
 
 function startCvBuilder() {
+    document.getElementById('formContainer').style.display = '';
     setAppMode('cv');
     const cvRadio = document.querySelector('input[name="downloadProduct"][value="cv"]');
     if (cvRadio) cvRadio.checked = true;
@@ -3172,5 +3174,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Wizard UI (step-by-step navigation)
     initWizard();
-    setAppMode('cv');
+    // setAppMode('cv'); // Removed auto-start. User must click a button to begin.
 });
