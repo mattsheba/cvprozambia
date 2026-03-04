@@ -1067,10 +1067,16 @@ footer::before {
     margin: 0 auto;
 }
 
+.footer-brand {
+    max-width: 560px;
+}
+
 .footer-top {
     display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: start;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    align-items: center;
     gap: 14px 18px;
     padding-top: 8px;
 }
@@ -1101,7 +1107,8 @@ footer::before {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 12px;
-    justify-content: flex-end;
+    justify-content: center;
+    align-items: center;
 }
 
 .footer-link {
@@ -1112,6 +1119,7 @@ footer::before {
     text-decoration: none;
     font-weight: 700;
     padding: 8px 12px;
+    min-height: 40px;
     border-radius: 12px;
     background: rgba(249, 115, 22, 0.12);
     border: 1px solid rgba(249, 115, 22, 0.22);
@@ -1134,19 +1142,48 @@ footer::before {
     color: #ffffff;
 }
 
+.footer-link:active {
+    transform: translateY(0);
+}
+
 .footer-link:focus {
     outline: 3px solid rgba(249, 115, 22, 0.28);
     outline-offset: 2px;
 }
 
+.footer-link:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.28);
+    outline-offset: 2px;
+}
+
+/* Admin button lives in footer (dark background), so restyle it locally */
+footer #adminBtn.btn-secondary {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    margin-top: 0;
+}
+
+footer #adminBtn.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+footer #adminBtn.btn-secondary:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.32);
+    outline-offset: 2px;
+}
+
 .footer-bottom {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     flex-wrap: wrap;
     gap: 8px 14px;
     margin-top: 16px;
     padding-top: 14px;
+    padding-left: var(--wa-safe-x);
     padding-right: var(--wa-safe-x);
     border-top: 1px solid rgba(255,255,255,0.10);
 }
@@ -1155,6 +1192,31 @@ footer::before {
     font-weight: 800;
     color: #ffffff;
     margin: 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.footer-powered:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+}
+
+.footer-powered:active {
+    transform: translateY(0);
+}
+
+.footer-powered:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.32);
+    outline-offset: 2px;
 }
 
 .footer-copy {
@@ -1216,6 +1278,7 @@ footer::before {
         flex-direction: column;
         align-items: center;
         text-align: center;
+        padding-left: 0;
         padding-right: 0;
     }
 

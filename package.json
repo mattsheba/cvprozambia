@@ -4,6 +4,8 @@
   "description": "**100% client-side, no backend required!**",
   "main": "index.js",
   "scripts": {
+    "dev": "netlify dev",
+    "dev:8888": "netlify dev --port 8888",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

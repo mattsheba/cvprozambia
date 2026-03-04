@@ -70,13 +70,14 @@
 
         <main>
             <div class="cv-layout">
-            <div class="form-container" id="formContainer" style="display:none">
+            <div class="form-container" id="formContainer">
                 <div class="wizard-header" aria-label="Form progress">
                     <div id="wizardProgress" class="wizard-progress"></div>
                     <div id="wizardStepper" class="wizard-stepper" aria-label="Steps"></div>
                 </div>
 
                 <section class="form-step" data-title="Personal Information">
+                                        <p class="help-text">Enter your full legal name and contact details. Use a professional email address. LinkedIn is optional but recommended.</p>
                     <h2>Personal Information</h2>
 
                     <div class="form-group">
@@ -124,9 +125,14 @@
                             <input type="text" id="country" placeholder="Zambia" value="Zambia" autocomplete="country">
                         </div>
                     </div>
+                    <div class="form-group" id="linkedinWrapPersonal" data-mode="cv">
+                        <label for="linkedinUrl">LinkedIn URL (Optional)</label>
+                        <input type="url" id="linkedinUrl" placeholder="https://www.linkedin.com/in/yourname" autocomplete="url" oninput="schedulePreviewUpdate()">
+                    </div>
                 </section>
 
                 <section class="form-step" data-title="Professional Summary" data-mode="cv">
+                                        <p class="help-text">Write a brief summary (3–5 lines) highlighting your experience, strengths, and career goals. Tailor it to your target job.</p>
                     <h2>Professional Summary</h2>
                     <div class="form-group">
                         <label for="summary">Professional Summary</label>
@@ -150,11 +156,17 @@
                 </section>
 
                 <section class="form-step" data-title="Skills" data-mode="cv">
+                                        <p class="help-text">Add your most relevant technical, soft, and language skills. Group and order them by importance. Limit to 8–12 total for clarity.</p>
                     <h2>Skills</h2>
                     <div class="form-group">
-                        <label for="skillInput">Add Skills</label>
+                        <label for="skillInput">Add Skill</label>
                         <div class="skill-input-group">
                             <input type="text" id="skillInput" placeholder="e.g., Project Management" autocomplete="off">
+                            <select id="skillTypeInput" aria-label="Skill type">
+                                <option value="technical">Technical</option>
+                                <option value="soft">Soft</option>
+                                <option value="language">Language</option>
+                            </select>
                             <button type="button" onclick="addSkill()">Add</button>
                         </div>
                         <button type="button" class="btn-ai" onclick="generateSkills()">
@@ -171,24 +183,29 @@
                             </div>
                             <div id="skillsSuggestions" class="tags-container"></div>
                         </div>
-                        <div id="skillsList" class="tags-container"></div>
-                        <p class="help-text">Tip: Click a skill to edit it.</p>
+                        <div id="skillsListTechnical" class="tags-container"></div>
+                        <div id="skillsListSoft" class="tags-container"></div>
+                        <div id="skillsListLanguage" class="tags-container"></div>
+                        <p class="help-text">Tip: Select a type and click a skill to edit or drag to reorder.</p>
                     </div>
                 </section>
 
                 <section class="form-step" data-title="Work Experience" data-mode="cv">
+                                        <p class="help-text">List your work history in reverse order. Include job title, company, location, employment type, and key duties/achievements. Use bullet points for responsibilities.</p>
                     <h2>Work Experience</h2>
                     <div id="experienceList"></div>
                     <button type="button" class="btn-secondary" onclick="addExperience()">+ Add Experience</button>
                 </section>
 
                 <section class="form-step" data-title="Education" data-mode="cv">
+                                        <p class="help-text">Add your highest and most relevant qualifications. Include institution, location, and graduation date.</p>
                     <h2>Education</h2>
                     <div id="educationList"></div>
                     <button type="button" class="btn-secondary" onclick="addEducation()">+ Add Education</button>
                 </section>
 
                 <section class="form-step" data-title="Activities & Honors" data-mode="cv">
+                                        <p class="help-text">Include leadership, volunteering, awards, or notable achievements. Keep each entry brief and relevant.</p>
                     <h2>Activities & Honors (Optional)</h2>
                     <div id="activitiesHonorsList"></div>
                     <button type="button" class="btn-secondary" onclick="addActivityHonor()">+ Add Activity/Honor</button>
@@ -196,6 +213,7 @@
                 </section>
 
                 <section class="form-step" data-title="Websites & Profiles" data-mode="cv">
+                                        <p class="help-text">Add links to your professional website, portfolio, LinkedIn, GitHub, or other relevant profiles. Double-check URLs for accuracy.</p>
                     <h2>Websites, Portfolios & Profiles (Optional)</h2>
 
                     <div class="form-group">
@@ -208,10 +226,7 @@
                         <input type="url" id="portfolioUrl" placeholder="https://portfolio.com/yourname" autocomplete="url" oninput="schedulePreviewUpdate()">
                     </div>
 
-                    <div class="form-group" id="linkedinWrap" data-mode="cv">
-                        <label for="linkedinUrl">LinkedIn URL (Optional)</label>
-                        <input type="url" id="linkedinUrl" placeholder="https://www.linkedin.com/in/yourname" autocomplete="url" oninput="schedulePreviewUpdate()">
-                    </div>
+                    <!-- LinkedIn URL now in Personal Information section -->
 
                     <div class="form-group" id="githubWrap" data-mode="cv">
                         <label for="githubUrl">GitHub URL (Optional)</label>
@@ -227,18 +242,21 @@
                 </section>
 
                 <section class="form-step" data-title="Certifications & Licensing" data-mode="cv">
+                                        <p class="help-text">List certifications or licenses relevant to your career. Include the issuing organization and date awarded.</p>
                     <h2>Certifications & Licensing (Optional)</h2>
                     <div id="certificationsList"></div>
                     <button type="button" class="btn-secondary" onclick="addCertification()">+ Add Certification/License</button>
                 </section>
 
                 <section class="form-step" data-title="Languages" data-mode="cv">
+                                        <p class="help-text">Add languages you speak and select your proficiency level. List only those you are comfortable using professionally.</p>
                     <h2>Languages (Optional)</h2>
                     <div id="languagesList"></div>
                     <button type="button" class="btn-secondary" onclick="addLanguage()">+ Add Language</button>
                 </section>
 
                 <section class="form-step" data-title="Hobbies" data-mode="cv">
+                                        <p class="help-text">List up to 3–5 hobbies or interests. Choose those that reflect positive qualities or are relevant to your target job.</p>
                     <h2>Hobbies & Interests (Optional)</h2>
                     <div class="form-group">
                         <label for="hobbyInput">Add Hobby</label>
@@ -251,6 +269,7 @@
                 </section>
 
                 <section class="form-step" data-title="References" data-mode="cv">
+                                        <p class="help-text">References are optional. You can simply state “Available upon request” or add referee details if required.</p>
                     <h2>References (Optional)</h2>
                     <div class="form-group">
                         <label>
@@ -347,7 +366,7 @@
                     <div class="form-actions">
                         <button type="button" class="btn-primary" onclick="handleDownload()" id="downloadBtn">
                             <span id="downloadLoading" style="display: none;">⏳ Processing...</span>
-                            <span id="downloadText">💰 Pay ZMW 50 & Download CV</span>
+                            <span id="downloadText">💰 Pay & Download</span>
                         </button>
                         <p class="help-text" id="downloadLoginHint">No account needed for a one‑off download. Sign up after to save and re‑download for free.</p>
                     </div>
@@ -370,11 +389,6 @@
         <footer>
             <div class="footer-inner">
                 <div class="footer-top">
-                    <div class="footer-brand">
-                        <div class="footer-brand-title">CVPro Zambia</div>
-                        <div class="footer-brand-sub">ATS-friendly CV builder • Fast PDF export</div>
-                    </div>
-
                     <div class="footer-links" aria-label="Contact links">
                         <a class="footer-link footer-link-call" href="tel:+260977669883">
                             <svg class="footer-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
@@ -392,7 +406,7 @@
                 </div>
 
                 <div class="footer-bottom">
-                    <p class="footer-powered">Powered by Glamified Systems</p>
+                    <a class="footer-powered" href="https://glamifiedsystems.com" target="_blank" rel="noopener noreferrer">Powered by Glamified Systems</a>
                     <a href="/admin" class="btn-secondary btn-mini" id="adminBtn" style="display:none">Admin</a>
                     <p class="footer-copy">&copy; 2026 CVPro Zambia. All rights reserved.</p>
                 </div>
@@ -409,7 +423,7 @@
 
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="js/config.v20260206.js"></script>
-    <script src="js/app-standalone.v20260206.1.js"></script>
+    <script src="js/config.v20260304.js"></script>
+    <script src="js/app-standalone.v20260304.js"></script>
 </body>
 </html>

@@ -1,4 +1,8 @@
 // Netlify Serverless Function to securely proxy Gemini API calls
+// NOTE: Some runtimes may not provide global fetch (e.g., older Node versions).
+// We polyfill using node-fetch (already in dependencies) for compatibility.
+// eslint-disable-next-line no-redeclare
+const fetch = globalThis.fetch || require('node-fetch');
 const _rateState = globalThis.__aiRateState || (globalThis.__aiRateState = new Map());
 
 exports.handler = async (event, context) => {
