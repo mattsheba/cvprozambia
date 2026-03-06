@@ -3187,6 +3187,38 @@ document.addEventListener('DOMContentLoaded', function() {
     safeCall(updatePreview);
     scheduleEntitlementUiRefresh();
 
+    // Copy protection for CV preview (prevents copying before payment)
+    const cvPreview = document.getElementById('cvPreview');
+    if (cvPreview) {
+        // Block right-click context menu
+        cvPreview.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        // Block copy event
+        cvPreview.addEventListener('copy', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        // Block cut event
+        cvPreview.addEventListener('cut', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        // Block drag start (prevents drag-select to copy)
+        cvPreview.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        // Block keyboard shortcuts (Ctrl+C, Ctrl+A) when mouse is over preview
+        cvPreview.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'C' || e.key === 'A')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+
     // Wizard UI (step-by-step navigation)
     try {
         const formContainer = document.getElementById('formContainer');
