@@ -5,7 +5,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
     color: #333;
     background:
@@ -120,6 +120,7 @@ header::after {
         0 16px 40px rgba(0,0,0,0.22),
         inset 0 0 0 1px rgba(15, 23, 42, 0.08);
     pointer-events: none;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -163,6 +164,71 @@ header p {
     justify-content: center;
 }
 
+/* Make feature chips look informational, not like CTAs */
+.brand-pills .pill {
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+    .header-cta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    justify-content: center;
+    }
+
+.btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: auto;
+    margin-top: 0;
+    border: 0;
+    cursor: pointer;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #2563eb 0%, #f97316 100%);
+    box-shadow:
+        0 14px 34px rgba(37, 99, 235, 0.22),
+        0 12px 26px rgba(249, 115, 22, 0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn-cta:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.02);
+    box-shadow:
+        0 18px 44px rgba(37, 99, 235, 0.28),
+        0 16px 34px rgba(249, 115, 22, 0.22);
+}
+
+.btn-cta:active {
+    transform: translateY(0px);
+}
+
+.btn-cta:focus {
+    outline: 3px solid rgba(255, 255, 255, 0.35);
+    outline-offset: 2px;
+}
+
+    @media (max-width: 520px) {
+        .header-cta {
+            width: 100%;
+        }
+        .btn-cta {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
 .pill {
     display: inline-flex;
     align-items: center;
@@ -173,6 +239,7 @@ header p {
     font-weight: 700;
     font-size: 0.88rem;
     letter-spacing: 0.2px;
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     box-shadow: 0 10px 18px rgba(0,0,0,0.12);
     transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
@@ -215,6 +282,11 @@ main {
     padding: 22px;
     min-width: 0;
     max-width: 100%;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    display: block;
+    opacity: 1;
 }
 
 .wizard-header {
@@ -239,7 +311,6 @@ main {
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
 }
 
 .wizard-step {
@@ -247,13 +318,81 @@ main {
     border: 1px solid #e5e7eb;
     background: white;
     color: #374151;
-    border-radius: 999px;
+    border-radius: 14px;
     padding: 8px 10px;
     font-weight: 800;
     font-size: 0.85rem;
     line-height: 1;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 92px;
     cursor: pointer;
     transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.wizard-step-num {
+    font-weight: 900;
+    letter-spacing: 0.2px;
+}
+
+.wizard-step-label {
+    font-weight: 700;
+    font-size: 0.70rem;
+    opacity: 0.85;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.download-products {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+.download-products-title {
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.download-product {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(0,0,0,.12);
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.download-product:last-child {
+    margin-bottom: 0;
+}
+
+.download-product input {
+    margin: 0;
+}
+
+.download-product-main {
+    font-weight: 700;
+}
+
+.download-product-meta {
+    font-size: 12px;
+    opacity: .9;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(59,130,246,.15);
+    border: 1px solid rgba(59,130,246,.25);
+    white-space: nowrap;
 }
 
 .wizard-step:hover {
@@ -358,20 +497,55 @@ main {
 }
 
 @media (max-width: 640px) {
+    body {
+        padding: 8px;
+    }
+
     main {
-        padding: 14px;
+        padding: 12px;
     }
 
     .form-container {
-        padding: 14px;
+        padding: 12px;
     }
 
     .preview-container {
-        padding: 14px;
+        padding: 12px;
+    }
+
+    .cv-layout {
+        gap: 12px;
+    }
+
+    .wizard-header {
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 10px;
+        border-radius: 14px;
+    }
+
+    .wizard-step {
+        padding: 7px 9px;
+        font-size: 0.82rem;
     }
 
     header {
         padding: 12px 14px 10px;
+    }
+
+    .brand-logo {
+        width: clamp(72px, 22vw, 120px);
+        height: clamp(72px, 22vw, 120px);
+        margin-bottom: -4px;
+    }
+
+    .brand-logo::before {
+        inset: -8px;
+        border-radius: 22px;
+    }
+
+    .brand-logo-img {
+        border-radius: 20px;
     }
 
     header h1 {
@@ -432,6 +606,60 @@ main {
         justify-content: flex-start;
         flex-wrap: wrap;
     }
+
+    h2 {
+        margin: 18px 0 12px 0;
+        padding-bottom: 8px;
+        font-size: 1.25rem;
+    }
+
+    h3 {
+        margin: 12px 0 8px 0;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .form-group label {
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+    }
+
+    .help-text {
+        margin-top: 6px;
+        font-size: 0.90rem;
+    }
+
+    .tags-container {
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .suggestions-wrap {
+        margin-top: 10px;
+        padding: 10px;
+    }
+
+    .btn-mini {
+        padding: 9px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 420px) {
+    body {
+        padding: 6px;
+    }
+
+    header h1 {
+        font-size: clamp(1.95rem, 9vw, 2.35rem);
+    }
+
+    .pill {
+        padding: 5px 8px;
+        font-size: 0.80rem;
+    }
 }
 
 .help-text {
@@ -449,6 +677,25 @@ main {
     color: #111827;
     font-size: 12.5px;
     line-height: 1.35;
+}
+
+.letter-preview {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #111827;
+}
+
+.letter-line {
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.letter-strong {
+    font-weight: 800;
+}
+
+.letter-blank {
+    height: 10px;
 }
 
 .cv-preview .cv-name {
@@ -822,10 +1069,16 @@ footer::before {
     margin: 0 auto;
 }
 
+.footer-brand {
+    max-width: 560px;
+}
+
 .footer-top {
     display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: start;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    align-items: center;
     gap: 14px 18px;
     padding-top: 8px;
 }
@@ -856,7 +1109,8 @@ footer::before {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 12px;
-    justify-content: flex-end;
+    justify-content: center;
+    align-items: center;
 }
 
 .footer-link {
@@ -867,6 +1121,7 @@ footer::before {
     text-decoration: none;
     font-weight: 700;
     padding: 8px 12px;
+    min-height: 40px;
     border-radius: 12px;
     background: rgba(249, 115, 22, 0.12);
     border: 1px solid rgba(249, 115, 22, 0.22);
@@ -889,19 +1144,48 @@ footer::before {
     color: #ffffff;
 }
 
+.footer-link:active {
+    transform: translateY(0);
+}
+
 .footer-link:focus {
     outline: 3px solid rgba(249, 115, 22, 0.28);
     outline-offset: 2px;
 }
 
+.footer-link:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.28);
+    outline-offset: 2px;
+}
+
+/* Admin button lives in footer (dark background), so restyle it locally */
+footer #adminBtn.btn-secondary {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    margin-top: 0;
+}
+
+footer #adminBtn.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+footer #adminBtn.btn-secondary:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.32);
+    outline-offset: 2px;
+}
+
 .footer-bottom {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     flex-wrap: wrap;
     gap: 8px 14px;
     margin-top: 16px;
     padding-top: 14px;
+    padding-left: var(--wa-safe-x);
     padding-right: var(--wa-safe-x);
     border-top: 1px solid rgba(255,255,255,0.10);
 }
@@ -910,6 +1194,31 @@ footer::before {
     font-weight: 800;
     color: #ffffff;
     margin: 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.footer-powered:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+}
+
+.footer-powered:active {
+    transform: translateY(0);
+}
+
+.footer-powered:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.32);
+    outline-offset: 2px;
 }
 
 .footer-copy {
@@ -918,17 +1227,66 @@ footer::before {
 }
 
 @media (max-width: 640px) {
+    footer {
+        padding: 22px 14px 30px;
+    }
+
     .footer-top {
         grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
     }
 
     .footer-links {
-        justify-content: flex-start;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .footer-brand-title {
+        font-size: 1.0rem;
+    }
+
+    .footer-brand-sub {
+        font-size: 0.9rem;
+    }
+
+    .footer-link {
+        width: 100%;
+        max-width: 560px;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.92rem;
+        padding: 10px 12px;
+    }
+
+    .footer-ico {
+        display: none;
+    }
+
+    .footer-link-label {
+        display: none;
+    }
+
+    .footer-link-text {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .footer-link-whatsapp {
+        display: none;
     }
 
     .footer-bottom {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        text-align: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .footer-powered,
+    .footer-copy {
+        font-size: 0.9rem;
     }
 }
 
@@ -996,4 +1354,34 @@ footer::before {
         grid-template-columns: 1fr;
     }
     
+}
+
+/* ============================================
+   Utility classes (avoid inline styles)
+   ============================================ */
+
+/* Hidden by default, shown via JS */
+.u-hidden {
+    display: none !important;
+}
+
+/* For elements that start hidden but may be toggled */
+.loading,
+.suggestions-wrap {
+    display: none;
+}
+
+/* Account/auth buttons - initially hidden, shown when logged in/out */
+#logoutBtn,
+#loadCvBtn,
+#saveCvBtn,
+#adminBtn,
+#adminLogoutBtn,
+#downloadLoading {
+    display: none;
+}
+
+/* Help text with custom margin */
+#coverOnlyQuickHint {
+    margin-top: 8px;
 }

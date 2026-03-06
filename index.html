@@ -41,13 +41,13 @@
         }
         </script>
     <title>CVPro Zambia - ATS-Friendly CV Builder</title>
-    <link rel="stylesheet" href="css/styles.v20260205.3.css">
+    <link rel="stylesheet" href="css/styles.v20260306.css">
     <link rel="stylesheet" href="css/styles.footer.v20260305.3.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
-    <!-- Toastify for notifications -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Toastify for notifications (self-hosted to avoid tracking prevention) -->
+    <link rel="stylesheet" href="css/toastify.min.css">
 </head>
 <body>
     <div class="container">
@@ -64,7 +64,7 @@
                         <button type="button" class="btn-cta" onclick="startCvBuilder()">Build a CV</button>
                         <button type="button" class="btn-cta" onclick="startCoverLetterOnly()">Create Cover Letter</button>
                     </div>
-                    <p class="help-text" id="coverOnlyQuickHint" style="margin-top:8px;">Tip: You can create a cover letter without filling the full CV.</p>
+                    <p class="help-text" id="coverOnlyQuickHint">Tip: You can create a cover letter without filling the full CV.</p>
                 </div>
             </div>
         </header>
@@ -139,10 +139,10 @@
                         <label for="summary">Professional Summary</label>
                         <textarea id="summary" rows="4" placeholder="Brief summary of your professional background and career goals..."></textarea>
                         <button type="button" class="btn-ai" onclick="generateSummary()">
-                            <span id="summaryLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="summaryLoading" class="loading">⏳ Generating...</span>
                             <span id="summaryText">✨ Generate Summary</span>
                         </button>
-                        <div id="summarySuggestionWrap" class="suggestions-wrap" style="display: none;">
+                        <div id="summarySuggestionWrap" class="suggestions-wrap">
                             <div class="suggestions-header">
                                 <div class="suggestions-title">Suggested summary</div>
                                 <div class="suggestions-actions">
@@ -171,10 +171,10 @@
                             <button type="button" onclick="addSkill()">Add</button>
                         </div>
                         <button type="button" class="btn-ai" onclick="generateSkills()">
-                            <span id="skillsLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="skillsLoading" class="loading">⏳ Generating...</span>
                             <span id="skillsText">✨ Suggest Skills</span>
                         </button>
-                        <div id="skillsSuggestionsWrap" class="suggestions-wrap" style="display: none;">
+                        <div id="skillsSuggestionsWrap" class="suggestions-wrap">
                             <div class="suggestions-header">
                                 <div class="suggestions-title">Suggested skills</div>
                                 <div class="suggestions-actions">
@@ -307,10 +307,10 @@
                         <label for="coverJobDesc">Job Description (Optional)</label>
                         <textarea id="coverJobDesc" rows="6" placeholder="Paste the job description here for better tailoring..." autocomplete="off" oninput="schedulePreviewUpdate()"></textarea>
                         <button type="button" class="btn-ai" onclick="generateCoverLetter()">
-                            <span id="coverLoading" class="loading" style="display: none;">⏳ Generating...</span>
+                            <span id="coverLoading" class="loading">⏳ Generating...</span>
                             <span id="coverText">✨ Generate Cover Letter</span>
                         </button>
-                        <div id="coverSuggestionWrap" class="suggestions-wrap" style="display: none;">
+                        <div id="coverSuggestionWrap" class="suggestions-wrap">
                             <div class="suggestions-header">
                                 <div class="suggestions-title">Suggested cover letter</div>
                                 <div class="suggestions-actions">
@@ -338,9 +338,9 @@
                             <div class="account-actions">
                                 <button type="button" class="btn-secondary btn-mini" onclick="openLogin()" id="loginBtn">Login</button>
                                 <button type="button" class="btn-secondary btn-mini" onclick="openSignup()" id="signupBtn">Sign up</button>
-                                <button type="button" class="btn-secondary btn-mini" onclick="logout()" id="logoutBtn" style="display:none">Logout</button>
-                                <button type="button" class="btn-secondary btn-mini" onclick="loadSavedCv()" id="loadCvBtn" style="display:none">Load saved</button>
-                                <button type="button" class="btn-secondary btn-mini" onclick="saveCvNow()" id="saveCvBtn" style="display:none">Save</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="logout()" id="logoutBtn">Logout</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="loadSavedCv()" id="loadCvBtn">Load saved</button>
+                                <button type="button" class="btn-secondary btn-mini" onclick="saveCvNow()" id="saveCvBtn">Save</button>
                             </div>
                         </div>
                     </div>
@@ -366,7 +366,7 @@
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn-primary" onclick="handleDownload()" id="downloadBtn">
-                            <span id="downloadLoading" style="display: none;">⏳ Processing...</span>
+                            <span id="downloadLoading">⏳ Processing...</span>
                             <span id="downloadText">💰 Pay & Download</span>
                         </button>
                         <p class="help-text" id="downloadLoginHint">No account needed for a one‑off download. Sign up after to save and re‑download for free.</p>
@@ -408,7 +408,7 @@
 
                 <div class="footer-bottom">
                     <a class="footer-powered" href="https://glamifiedsystems.com" target="_blank" rel="noopener noreferrer">Powered by Glamified Systems</a>
-                    <a href="/admin" class="btn-secondary btn-mini" id="adminBtn" style="display:none">Admin</a>
+                    <a href="/admin" class="btn-secondary btn-mini" id="adminBtn">Admin</a>
                     <p class="footer-copy">&copy; 2026 CVPro Zambia. All rights reserved.</p>
                 </div>
             </div>
@@ -423,7 +423,7 @@
     </a>
 
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="js/toastify.min.js"></script>
     <script src="js/config.v20260304.js"></script>
     <script src="js/app-standalone.v20260304.js"></script>
 </body>
