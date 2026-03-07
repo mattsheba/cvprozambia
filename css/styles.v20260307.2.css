@@ -94,22 +94,26 @@ body {
     position: absolute;
     top: -3px;
     left: -100%;
-    width: 60%;
+    width: 50%;
     height: calc(100% + 6px);
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.4) 50%,
+        rgba(59, 130, 246, 0.15) 25%,
+        rgba(255, 255, 255, 0.12) 50%,
+        rgba(249, 115, 22, 0.15) 75%,
         transparent 100%
     );
-    animation: shimmer 4s ease-in-out infinite;
+    animation: shimmer 5s ease-in-out infinite;
     pointer-events: none;
     z-index: 10;
 }
 
 @keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 200%; }
+    0% { left: -100%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 200%; opacity: 0; }
 }
 
 /* Inner container to cover the gradient border */
@@ -157,11 +161,11 @@ header::before {
 header::after {
     content: '';
     position: absolute;
-    inset: -40% -60%;
-    background: conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,0.18), rgba(255,255,255,0) 40%, rgba(255,255,255,0.10), rgba(255,255,255,0) 75%);
-    opacity: 0.18;
-    transform: rotate(0deg);
-    animation: headerGlow 10s linear infinite;
+    inset: 0;
+    background: 
+        radial-gradient(ellipse 800px 400px at 30% 20%, rgba(59, 130, 246, 0.08), transparent 70%),
+        radial-gradient(ellipse 600px 350px at 70% 80%, rgba(249, 115, 22, 0.06), transparent 70%);
+    opacity: 1;
     pointer-events: none;
 }
 
@@ -442,14 +446,9 @@ header p {
     75% { transform: translateY(-4px) rotate(-0.5deg); }
 }
 
-@keyframes headerGlow {
-    0% { transform: rotate(0deg); opacity: 0.18; }
-    50% { opacity: 0.25; }
-    100% { transform: rotate(360deg); opacity: 0.18; }
-}
+/* Removed rotating headerGlow - replaced with static gradient overlay */
 
 @media (prefers-reduced-motion: reduce) {
-    header::after,
     .brand-logo {
         animation: none !important;
     }
