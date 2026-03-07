@@ -433,46 +433,32 @@ function loadScriptOnce(src, { timeoutMs = 20000 } = {}) {
 }
 
 async function ensureJsPdfLoaded() {
+    // Script loads from HTML, just wait for initialization
     if (window.jspdf?.jsPDF) return;
-    try {
-        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    } catch (e) {
-        console.error('jsPDF script download failed:', e);
-        throw new Error('PDF generator unavailable. Please check your internet and try again.');
-    }
-    // Wait for jsPDF to initialize (up to 5 seconds)
-    for (let i = 0; i < 50 && !window.jspdf?.jsPDF; i++) {
+    console.log('[CVPro] Waiting for jsPDF to initialize...');
+    // Wait up to 10 seconds for jsPDF (script loads from HTML async)
+    for (let i = 0; i < 100 && !window.jspdf?.jsPDF; i++) {
         await new Promise(r => setTimeout(r, 100));
     }
     if (!window.jspdf?.jsPDF) {
-        console.error('jsPDF global not found after script loaded.');
+        console.error('[CVPro] jsPDF global not found after waiting.');
         throw new Error('PDF generator not ready. Please refresh the page and try again.');
     }
+    console.log('[CVPro] jsPDF ready!');
 }
 
 async function ensureLencoLoaded() {
-    console.log('[CVPro] ensureLencoLoaded called, LencoPay exists:', !!window.LencoPay);
+    // Script loads from HTML, just wait for initialization
     if (window.LencoPay?.getPaid) {
-        console.log('[CVPro] LencoPay already ready');
         return;
     }
-    console.log('[CVPro] Loading Lenco script...');
-    try {
-        await loadScriptOnce('https://pay.lenco.co/js/v1/inline.js');
-        console.log('[CVPro] Lenco script loaded, waiting for initialization...');
-    } catch (e) {
-        console.error('[CVPro] Lenco script download failed:', e);
-        throw new Error('Payment system unavailable. Please check your internet and try again.');
-    }
-    // Wait for LencoPay to initialize (up to 5 seconds)
-    for (let i = 0; i < 50 && !window.LencoPay?.getPaid; i++) {
+    console.log('[CVPro] Waiting for LencoPay to initialize...');
+    // Wait up to 10 seconds for LencoPay (script loads from HTML async)
+    for (let i = 0; i < 100 && !window.LencoPay?.getPaid; i++) {
         await new Promise(r => setTimeout(r, 100));
-        if (i > 0 && i % 10 === 0) {
-            console.log('[CVPro] Still waiting for LencoPay...', i * 100, 'ms');
-        }
     }
     if (!window.LencoPay?.getPaid) {
-        console.error('[CVPro] LencoPay not ready. window.LencoPay =', window.LencoPay, 'Keys:', window.LencoPay ? Object.keys(window.LencoPay) : 'N/A');
+        console.error('[CVPro] LencoPay not ready. window.LencoPay =', window.LencoPay);
         throw new Error('Payment system not ready. Please refresh the page and try again.');
     }
     console.log('[CVPro] LencoPay ready!');
@@ -3001,9 +2987,6 @@ async function sendCvEmail(data, pdfDoc, product = 'cv') {
 
 // Handle Download with Payment (Standalone Mode)
 async function handleDownload() {
-    const startTime = Date.now();
-    console.log('[CVPro] Download clicked');
-    
     const data = collectCVData();
     // Validation
     if (!data.personalInfo.fullName || !data.personalInfo.email) {
@@ -3016,10 +2999,6 @@ async function handleDownload() {
     const user = getCurrentUser();
     if (loadingSpan) loadingSpan.style.display = 'inline';
     if (textSpan) textSpan.style.display = 'none';
-    
-    // Check if payment system is ready (should be from preload)
-    const lencoReady = !!(window.LencoPay?.getPaid);
-    console.log('[CVPro] Lenco ready at click:', lencoReady, 'Time:', Date.now() - startTime, 'ms');
 
     try {
         const product = getSelectedDownloadProduct();
@@ -3105,17 +3084,13 @@ async function handleDownload() {
         // Start jsPDF loading in background (don't wait)
         const jsPdfPromise = ensureJsPdfLoaded();
         
-        // Check if Lenco needs loading
-        const needsLencoWait = !window.LencoPay?.getPaid;
-        if (needsLencoWait) {
-            console.log('[CVPro] Lenco not ready, need to wait...');
+        // Wait for Lenco if still loading
+        if (!window.LencoPay?.getPaid) {
             showToast('Connecting to payment...', 'info');
         }
         
-        const lencoStartTime = Date.now();
         try {
             await ensureLencoLoaded();
-            console.log('[CVPro] Lenco ready, took:', Date.now() - lencoStartTime, 'ms');
         } catch (loadError) {
             console.error('Lenco load error:', loadError);
             showToast('Payment system failed to load. Please refresh.', 'error');
@@ -3124,7 +3099,6 @@ async function handleDownload() {
             return;
         }
         
-        console.log('[CVPro] Opening payment popup...');
         window.LencoPay.getPaid({
             key: LENCO_PUBLIC_KEY,
             reference: reference,
@@ -3243,10 +3217,7 @@ async function handleDownload() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    // Preload payment and PDF scripts early so they're ready by download time
-    // (Don't await - just kick off loading in background)
-    ensureLencoLoaded().catch(() => console.log('Lenco preload failed, will retry on download'));
-    ensureJsPdfLoaded().catch(() => console.log('jsPDF preload failed, will retry on download'));
+    // Scripts (Lenco, jsPDF) load from HTML <script> tags
 
     // Netlify Identity (optional: enables save/load and free re-downloads)
     const idw = getIdentityWidget();

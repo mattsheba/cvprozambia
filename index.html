@@ -434,6 +434,9 @@
 
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="js/toastify.min.js"></script>
+    <!-- Load payment and PDF scripts early so they're ready by download time -->
+    <script src="https://pay.lenco.co/js/v1/inline.js" async></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" async></script>
     <script src="js/config.v20260304.js"></script>
     <script src="js/app-standalone.v20260307.5.js"></script>
 </body>
