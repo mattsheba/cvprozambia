@@ -429,13 +429,17 @@ async function ensureJsPdfLoaded() {
     try {
         await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     } catch (e) {
-        console.error('jsPDF load failed:', e);
+        console.error('jsPDF script download failed:', e);
+        throw new Error('PDF generator unavailable. Please check your internet and try again.');
     }
-    // Wait a bit for initialization
-    for (let i = 0; i < 10 && !window.jspdf?.jsPDF; i++) {
+    // Wait for jsPDF to initialize (up to 5 seconds)
+    for (let i = 0; i < 50 && !window.jspdf?.jsPDF; i++) {
         await new Promise(r => setTimeout(r, 100));
     }
-    if (!window.jspdf?.jsPDF) throw new Error('jsPDF failed to load. Check your internet connection.');
+    if (!window.jspdf?.jsPDF) {
+        console.error('jsPDF global not found after script loaded.');
+        throw new Error('PDF generator not ready. Please refresh the page and try again.');
+    }
 }
 
 async function ensureLencoLoaded() {
@@ -443,13 +447,17 @@ async function ensureLencoLoaded() {
     try {
         await loadScriptOnce('https://pay.lenco.co/js/v1/inline.js');
     } catch (e) {
-        console.error('Lenco load failed:', e);
+        console.error('Lenco script download failed:', e);
+        throw new Error('Payment system unavailable. Please check your internet and try again.');
     }
-    // Wait a bit for initialization
-    for (let i = 0; i < 10 && !window.LencoPay?.getPaid; i++) {
+    // Wait for LencoPay to initialize (up to 5 seconds)
+    for (let i = 0; i < 50 && !window.LencoPay?.getPaid; i++) {
         await new Promise(r => setTimeout(r, 100));
     }
-    if (!window.LencoPay?.getPaid) throw new Error('Payment system failed to load. Check your internet connection.');
+    if (!window.LencoPay?.getPaid) {
+        console.error('LencoPay global not found after script loaded. window.LencoPay =', window.LencoPay);
+        throw new Error('Payment system not ready. Please refresh the page and try again.');
+    }
 }
 
 // --- Account (Netlify Identity) + Saved CV ---
