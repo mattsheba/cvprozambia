@@ -466,34 +466,44 @@ header p {
     }
 }
 
-/* Simplified animations for mobile/tablet */
+/* Ultra-light mobile/tablet - no animations, minimal effects */
 @media (max-width: 768px) {
-    .container::before {
-        animation: borderGlow 12s linear infinite;
+    /* Kill ALL animations */
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
     }
+    
+    /* Remove border glow pseudo-element */
+    .container::before,
+    .container::after,
     .container > *:first-child::before {
-        display: none;
+        display: none !important;
     }
-    .brand-logo {
-        animation: logoFloat 6s ease-in-out infinite;
+    
+    /* Simple border instead of animated gradient */
+    .container {
+        border: 1px solid rgba(59, 130, 246, 0.3);
     }
+    
+    /* Remove logo pseudo-element glow */
     .brand-logo::before {
-        animation: none;
+        display: none !important;
     }
-    .pill {
-        animation: none;
-    }
+    
+    /* Simple white title */
     header h1 {
-        animation: none;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
+        background: none;
+        -webkit-background-clip: unset;
+        background-clip: unset;
+        -webkit-text-fill-color: white;
+        color: white;
     }
-    .btn-cta {
-        animation: none;
-    }
-    .btn-cta::before {
-        display: none;
+    
+    /* Remove button pseudo-elements */
+    .btn-cta::before,
+    .btn-cta::after {
+        display: none !important;
     }
 }
 
@@ -1757,7 +1767,7 @@ footer #adminBtn.btn-secondary:focus-visible {
     box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
 }
 
-/* Responsive */
+/* Responsive - Ultra-light for mobile */
 @media (max-width: 768px) {
     :root {
         --wa-right: 20px;
@@ -1765,40 +1775,49 @@ footer #adminBtn.btn-secondary:focus-visible {
         --wa-size: 50px;
     }
 
-    /* Simplified background for smooth scrolling */
+    /* Solid background - no gradients */
     body {
         padding: 10px;
-        background: linear-gradient(180deg, #0a0f1a 0%, #111827 50%, #0f172a 100%);
+        background: #0f172a;
     }
 
-    /* Simpler shadows for faster compositing */
+    /* No shadows at all */
     .container {
-        box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.1),
-            0 10px 40px rgba(0, 0, 0, 0.3);
+        box-shadow: none;
+        border-radius: 16px;
     }
 
-    /* Simplified header gradients */
+    /* Solid header background */
     header {
-        background: linear-gradient(145deg, #070b16 0%, #0f1a3d 50%, #060a16 100%);
+        background: #0c1629;
     }
     header::before,
     header::after {
-        display: none;
+        display: none !important;
+    }
+
+    /* Simplified main */
+    main {
+        padding: 16px;
+        background: #ffffff;
+    }
+
+    /* Simplified footer */
+    footer {
+        background: #0c1629;
+    }
+    footer::before {
+        display: none !important;
     }
 
     .brand-logo,
     .brand-logo svg {
-        width: 168px;
-        height: 168px;
+        width: 140px;
+        height: 140px;
     }
 
     header h1 {
-        font-size: 2rem;
-    }
-
-    main {
-        padding: 20px;
+        font-size: 1.75rem;
     }
 
     .cv-layout {
@@ -1813,13 +1832,15 @@ footer #adminBtn.btn-secondary:focus-visible {
         grid-template-columns: 1fr;
     }
 
-    /* Force GPU compositing for smoother scroll */
-    .container,
-    header,
-    main,
-    footer {
-        transform: translateZ(0);
-        backface-visibility: hidden;
+    /* Simple form styling */
+    .form-container {
+        border-radius: 12px;
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+    }
+
+    .wizard-header {
+        background: #f9fafb;
     }
 }
 
