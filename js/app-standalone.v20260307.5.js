@@ -3001,6 +3001,9 @@ async function sendCvEmail(data, pdfDoc, product = 'cv') {
 
 // Handle Download with Payment (Standalone Mode)
 async function handleDownload() {
+    const startTime = Date.now();
+    console.log('[CVPro] Download clicked');
+    
     const data = collectCVData();
     // Validation
     if (!data.personalInfo.fullName || !data.personalInfo.email) {
@@ -3013,6 +3016,10 @@ async function handleDownload() {
     const user = getCurrentUser();
     if (loadingSpan) loadingSpan.style.display = 'inline';
     if (textSpan) textSpan.style.display = 'none';
+    
+    // Check if payment system is ready (should be from preload)
+    const lencoReady = !!(window.LencoPay?.getPaid);
+    console.log('[CVPro] Lenco ready at click:', lencoReady, 'Time:', Date.now() - startTime, 'ms');
 
     try {
         const product = getSelectedDownloadProduct();
@@ -3095,11 +3102,20 @@ async function handleDownload() {
             }
         }
 
-        // Load Lenco first for instant payment popup, jsPDF loads in background
-        const jsPdfPromise = ensureJsPdfLoaded(); // Start loading but don't wait
+        // Start jsPDF loading in background (don't wait)
+        const jsPdfPromise = ensureJsPdfLoaded();
         
+        // Check if Lenco needs loading
+        const needsLencoWait = !window.LencoPay?.getPaid;
+        if (needsLencoWait) {
+            console.log('[CVPro] Lenco not ready, need to wait...');
+            showToast('Connecting to payment...', 'info');
+        }
+        
+        const lencoStartTime = Date.now();
         try {
-            await ensureLencoLoaded(); // Only wait for payment system
+            await ensureLencoLoaded();
+            console.log('[CVPro] Lenco ready, took:', Date.now() - lencoStartTime, 'ms');
         } catch (loadError) {
             console.error('Lenco load error:', loadError);
             showToast('Payment system failed to load. Please refresh.', 'error');
@@ -3108,6 +3124,7 @@ async function handleDownload() {
             return;
         }
         
+        console.log('[CVPro] Opening payment popup...');
         window.LencoPay.getPaid({
             key: LENCO_PUBLIC_KEY,
             reference: reference,
