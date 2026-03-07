@@ -71,8 +71,8 @@ body {
 .container::before {
     content: '';
     position: absolute;
-    inset: -3px;
-    border-radius: 27px;
+    inset: -1.5px;
+    border-radius: 25px;
     background: linear-gradient(
         90deg,
         #3b82f6 0%,
@@ -85,17 +85,16 @@ body {
     background-size: 400% 100%;
     animation: borderGlow 6s linear infinite;
     z-index: -1;
-    filter: blur(1px);
 }
 
 /* Shimmer overlay on border */
 .container > *:first-child::before {
     content: '';
     position: absolute;
-    top: -3px;
+    top: -1.5px;
     left: -100%;
     width: 50%;
-    height: calc(100% + 6px);
+    height: calc(100% + 3px);
     background: linear-gradient(
         90deg,
         transparent 0%,
@@ -120,8 +119,8 @@ body {
 .container::after {
     content: '';
     position: absolute;
-    inset: 2px;
-    border-radius: 22px;
+    inset: 1.5px;
+    border-radius: 23px;
     background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
     z-index: -1;
 }
@@ -1448,7 +1447,8 @@ footer {
     position: relative;
     background:
         radial-gradient(ellipse 1000px 250px at 15% 0%, rgba(249, 115, 22, 0.15), transparent 55%),
-        radial-gradient(ellipse 1000px 280px at 85% 15%, rgba(59, 130, 246, 0.15), transparent 55%),
+        radial-gradient(ellipse 1000px 280px at 85% 15%, rgba(59, 130, 246, 0.18), transparent 55%),
+        radial-gradient(ellipse 800px 300px at 50% 50%, rgba(56, 189, 248, 0.08), transparent 60%),
         radial-gradient(ellipse 600px 200px at 50% 100%, rgba(139, 92, 246, 0.1), transparent 50%),
         linear-gradient(180deg, #0a0f1a 0%, #060a14 100%);
     padding: 32px 24px 40px;
