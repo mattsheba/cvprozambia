@@ -139,7 +139,7 @@ function setAppMode(nextMode) {
     if (DEBUG_WIZARD) console.log('setAppMode -> steps:', wizardState.steps.map(s=>getWizardTitle(s)));
     renderWizardStepper();
     wizardState.currentIndex = 0;
-    updateWizardUI();
+    updateWizardUI(true); // Skip scroll on mode change
 
     updateDownloadProductsForMode(appMode);
     scheduleEntitlementUiRefresh();
@@ -1476,7 +1476,7 @@ function renderWizardStepper() {
     });
 }
 
-function updateWizardUI() {
+function updateWizardUI(skipScroll = false) {
     const total = wizardState.steps.length;
     const current = wizardState.currentIndex;
     const currentTitle = getWizardTitle(wizardState.steps[current]);
@@ -1509,19 +1509,22 @@ function updateWizardUI() {
         }
     });
 
-    const formContainer = document.querySelector('.form-container');
-    if (formContainer) {
-        const top = formContainer.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({ top: Math.max(0, top - 14), behavior: 'smooth' });
+    // Only scroll to form when user navigates between steps, not on initial page load
+    if (!skipScroll) {
+        const formContainer = document.querySelector('.form-container');
+        if (formContainer) {
+            const top = formContainer.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top: Math.max(0, top - 14), behavior: 'smooth' });
+        }
     }
 }
 
-function goToWizardStep(index) {
+function goToWizardStep(index, skipScroll = false) {
     const total = wizardState.steps.length;
     const next = Math.max(0, Math.min(index, total - 1));
     wizardState.currentIndex = next;
     if (DEBUG_WIZARD) console.log('goToWizardStep ->', next, getWizardTitle(wizardState.steps[next]));
-    updateWizardUI();
+    updateWizardUI(skipScroll);
 }
 
 function initWizard() {
@@ -1544,7 +1547,7 @@ function initWizard() {
     }
 
     wizardState.currentIndex = 0;
-    updateWizardUI();
+    updateWizardUI(true); // Skip scroll on init
 }
 
 // Toast notifications
@@ -3226,7 +3229,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setAppMode('cv');
         initWizard();
-        goToWizardStep(0);
+        goToWizardStep(0, true); // Skip scroll on initial page load
     } catch (e) {
         console.error('Wizard init failed:', e);
     } finally {
