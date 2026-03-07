@@ -1765,10 +1765,28 @@ footer #adminBtn.btn-secondary:focus-visible {
         --wa-size: 50px;
     }
 
+    /* Simplified background for smooth scrolling */
     body {
         padding: 10px;
+        background: linear-gradient(180deg, #0a0f1a 0%, #111827 50%, #0f172a 100%);
     }
-    
+
+    /* Simpler shadows for faster compositing */
+    .container {
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Simplified header gradients */
+    header {
+        background: linear-gradient(145deg, #070b16 0%, #0f1a3d 50%, #060a16 100%);
+    }
+    header::before,
+    header::after {
+        display: none;
+    }
+
     .brand-logo,
     .brand-logo svg {
         width: 168px;
@@ -1776,7 +1794,7 @@ footer #adminBtn.btn-secondary:focus-visible {
     }
 
     header h1 {
-        font-size: 2.45rem;
+        font-size: 2rem;
     }
 
     main {
@@ -1791,14 +1809,18 @@ footer #adminBtn.btn-secondary:focus-visible {
         position: static;
     }
     
-    header h1 {
-        font-size: 2rem;
-    }
-    
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
+    /* Force GPU compositing for smoother scroll */
+    .container,
+    header,
+    main,
+    footer {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
 }
 
 /* ============================================
