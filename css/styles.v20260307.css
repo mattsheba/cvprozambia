@@ -684,6 +684,21 @@ main {
     user-select: none !important;
     -webkit-touch-callout: none !important;
     pointer-events: auto;
+    /* Required for overlay positioning */
+    position: relative;
+}
+
+/* Transparent overlay to block text selection at DOM level */
+.cv-preview::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: none;
+    z-index: 10;
 }
 
 /* Apply copy protection to ALL elements inside preview */
@@ -707,6 +722,21 @@ main {
     -ms-user-select: none !important;
     user-select: none !important;
     -webkit-touch-callout: none !important;
+    /* Required for overlay positioning */
+    position: relative;
+}
+
+/* Transparent overlay for cover letter */
+.letter-preview::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: none;
+    z-index: 10;
 }
 
 .letter-preview *,
