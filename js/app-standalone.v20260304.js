@@ -3238,4 +3238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const anyActive = document.querySelector('.form-step.is-active');
         if (first && !anyActive) first.classList.add('is-active');
     }
+
+    // Force scroll to top of page on initial load
+    window.scrollTo(0, 0);
 });
