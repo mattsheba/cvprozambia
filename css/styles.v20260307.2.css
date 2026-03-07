@@ -468,42 +468,98 @@ header p {
 
 /* Ultra-light mobile/tablet - no animations, minimal effects */
 @media (max-width: 768px) {
-    /* Kill ALL animations */
+    /* Kill ALL animations and transitions */
     *, *::before, *::after {
         animation: none !important;
         transition: none !important;
     }
     
-    /* Remove border glow pseudo-element */
+    /* Remove ALL pseudo-elements */
     .container::before,
     .container::after,
-    .container > *:first-child::before {
+    .container > *:first-child::before,
+    .brand-logo::before,
+    .btn-cta::before,
+    .btn-cta::after,
+    header::before,
+    header::after,
+    footer::before,
+    .cv-preview::after {
         display: none !important;
     }
     
-    /* Simple border instead of animated gradient */
+    /* Simple container - no box-shadow */
     .container {
         border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: none !important;
+        background: #ffffff;
     }
     
-    /* Remove logo pseudo-element glow */
-    .brand-logo::before {
-        display: none !important;
+    /* Remove expensive filters from logo */
+    .brand-logo {
+        filter: none !important;
     }
     
-    /* Simple white title */
+    /* CRITICAL: Remove backdrop-filter from pills */
+    .pill {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        background: rgba(255, 255, 255, 0.15);
+    }
+    
+    /* Simple white title - no gradient */
     header h1 {
-        background: none;
-        -webkit-background-clip: unset;
-        background-clip: unset;
-        -webkit-text-fill-color: white;
-        color: white;
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        background-clip: unset !important;
+        -webkit-text-fill-color: white !important;
+        color: white !important;
+        text-shadow: none !important;
     }
     
-    /* Remove button pseudo-elements */
-    .btn-cta::before,
-    .btn-cta::after {
-        display: none !important;
+    /* Simple button - no gradient or shadow */
+    .btn-cta {
+        background: #2563eb !important;
+        box-shadow: none !important;
+    }
+    
+    /* Remove ALL box-shadows from form elements */
+    .form-container,
+    .wizard-header,
+    .wizard-step,
+    .preview-container,
+    .cv-preview,
+    .tags-container .tag,
+    input, select, textarea, button {
+        box-shadow: none !important;
+    }
+    
+    /* Solid backgrounds - no gradients */
+    main {
+        background: #f9fafb !important;
+    }
+    
+    .form-container {
+        background: #ffffff !important;
+    }
+    
+    .wizard-header {
+        background: #f3f4f6 !important;
+    }
+    
+    .preview-container {
+        background: #f9fafb !important;
+    }
+    
+    /* Remove sticky - causes repaints */
+    .preview-container {
+        position: static !important;
+    }
+    
+    /* Simplify brand logo image */
+    .brand-logo-img {
+        box-shadow: none !important;
     }
 }
 
@@ -1778,18 +1834,19 @@ footer #adminBtn.btn-secondary:focus-visible {
     /* Solid background - no gradients */
     body {
         padding: 10px;
-        background: #0f172a;
+        background: #0f172a !important;
     }
 
     /* No shadows at all */
     .container {
-        box-shadow: none;
+        box-shadow: none !important;
         border-radius: 16px;
     }
 
     /* Solid header background */
     header {
-        background: #0c1629;
+        background: #0c1629 !important;
+        box-shadow: none !important;
     }
     header::before,
     header::after {
@@ -1799,12 +1856,12 @@ footer #adminBtn.btn-secondary:focus-visible {
     /* Simplified main */
     main {
         padding: 16px;
-        background: #ffffff;
+        background: #ffffff !important;
     }
 
     /* Simplified footer */
     footer {
-        background: #0c1629;
+        background: #0c1629 !important;
     }
     footer::before {
         display: none !important;
@@ -1825,7 +1882,7 @@ footer #adminBtn.btn-secondary:focus-visible {
     }
 
     .preview-container {
-        position: static;
+        position: static !important;
     }
     
     .form-row {
@@ -1835,12 +1892,22 @@ footer #adminBtn.btn-secondary:focus-visible {
     /* Simple form styling */
     .form-container {
         border-radius: 12px;
-        box-shadow: none;
+        box-shadow: none !important;
         border: 1px solid #e5e7eb;
     }
 
     .wizard-header {
-        background: #f9fafb;
+        background: #f9fafb !important;
+    }
+
+    /* WhatsApp button - no effects */
+    .whatsapp-button {
+        box-shadow: none !important;
+        transition: none !important;
+    }
+    .whatsapp-button:hover {
+        transform: none !important;
+        box-shadow: none !important;
     }
 }
 
