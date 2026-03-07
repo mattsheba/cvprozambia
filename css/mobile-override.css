@@ -1,0 +1,88 @@
+/* Mobile performance override - loaded AFTER main CSS */
+/* Strips ALL expensive properties for instant scrolling */
+
+@media (max-width: 768px) {
+    /* Force hardware acceleration off expensive properties */
+    * {
+        animation: none !important;
+        transition: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        filter: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        transform: none !important;
+        will-change: auto !important;
+    }
+
+    /* Hide ALL pseudo elements */
+    *::before,
+    *::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    /* Solid backgrounds everywhere */
+    body {
+        background: #0f172a !important;
+    }
+
+    .container {
+        background: #ffffff !important;
+        border: 1px solid #3b82f6 !important;
+        border-radius: 12px !important;
+    }
+
+    header {
+        background: #0c1629 !important;
+    }
+
+    header h1 {
+        color: white !important;
+        -webkit-text-fill-color: white !important;
+        background: none !important;
+    }
+
+    main {
+        background: #ffffff !important;
+    }
+
+    footer {
+        background: #0c1629 !important;
+    }
+
+    .pill {
+        background: rgba(255,255,255,0.15) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+    }
+
+    .btn-cta {
+        background: #2563eb !important;
+    }
+
+    .form-container,
+    .preview-container,
+    .wizard-header,
+    .cv-preview {
+        background: #ffffff !important;
+    }
+
+    .wizard-header {
+        background: #f3f4f6 !important;
+    }
+
+    .preview-container {
+        position: static !important;
+        background: #f9fafb !important;
+    }
+
+    /* Force simple rendering */
+    .brand-logo {
+        width: 120px !important;
+        height: 120px !important;
+    }
+
+    .brand-logo-img {
+        border-radius: 12px !important;
+    }
+}
