@@ -71,20 +71,45 @@ body {
 .container::before {
     content: '';
     position: absolute;
-    inset: -2px;
-    border-radius: 26px;
+    inset: -3px;
+    border-radius: 27px;
     background: linear-gradient(
-        135deg,
+        90deg,
         #3b82f6 0%,
-        #2563eb 25%,
-        #f97316 50%,
-        #fb923c 75%,
+        #22c55e 20%,
+        #f97316 40%,
+        #ec4899 60%,
+        #8b5cf6 80%,
         #3b82f6 100%
     );
-    background-size: 300% 300%;
-    animation: borderGlow 8s ease infinite;
+    background-size: 400% 100%;
+    animation: borderGlow 6s linear infinite;
     z-index: -1;
-    opacity: 0.8;
+    filter: blur(1px);
+}
+
+/* Shimmer overlay on border */
+.container > *:first-child::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -100%;
+    width: 60%;
+    height: calc(100% + 6px);
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 200%; }
 }
 
 /* Inner container to cover the gradient border */
@@ -98,8 +123,8 @@ body {
 }
 
 @keyframes borderGlow {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
 }
 
 header {
@@ -156,7 +181,7 @@ header::after {
     flex: 0 0 auto;
     filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35));
     transform: translateZ(0);
-    animation: logoFloat 5s ease-in-out infinite;
+    animation: logoFloat 4s ease-in-out infinite, logoPulse 2s ease-in-out infinite;
     margin-bottom: -6px;
     position: relative;
 }
@@ -173,12 +198,17 @@ header::after {
     border-radius: 32px;
     opacity: 0.9;
     pointer-events: none;
-    animation: logoGlow 4s ease-in-out infinite alternate;
+    animation: logoGlow 3s ease-in-out infinite alternate;
 }
 
 @keyframes logoGlow {
-    0% { opacity: 0.7; transform: scale(1); }
-    100% { opacity: 1; transform: scale(1.02); }
+    0% { opacity: 0.6; transform: scale(0.98); filter: blur(0px); }
+    100% { opacity: 1; transform: scale(1.05); filter: blur(1px); }
+}
+
+@keyframes logoPulse {
+    0%, 100% { filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35)) brightness(1); }
+    50% { filter: drop-shadow(0 25px 40px rgba(34, 197, 94, 0.4)) brightness(1.05); }
 }
 
 .brand-logo svg {
@@ -217,10 +247,24 @@ header h1 {
     line-height: 1.1;
     letter-spacing: -0.5px;
     text-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.9) 50%, #f0f9ff 100%);
+    background: linear-gradient(
+        90deg, 
+        #ffffff 0%, 
+        #93c5fd 25%, 
+        #f97316 50%, 
+        #93c5fd 75%, 
+        #ffffff 100%
+    );
+    background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    animation: titleShine 4s linear infinite;
+}
+
+@keyframes titleShine {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
 }
 
 header p {
@@ -280,21 +324,51 @@ header p {
     letter-spacing: 0.3px;
     color: #ffffff;
     background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #f97316 100%);
+    background-size: 200% 200%;
     box-shadow:
         0 8px 25px rgba(37, 99, 235, 0.3),
         0 4px 12px rgba(249, 115, 22, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    animation: btnGradient 4s ease infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-cta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+    );
+    transition: left 0.5s ease;
+}
+
+.btn-cta:hover::before {
+    left: 100%;
+}
+
+@keyframes btnGradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .btn-cta:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-4px) scale(1.03);
     box-shadow:
-        0 12px 35px rgba(37, 99, 235, 0.35),
-        0 8px 20px rgba(249, 115, 22, 0.25),
+        0 15px 40px rgba(37, 99, 235, 0.4),
+        0 10px 25px rgba(249, 115, 22, 0.3),
+        0 0 30px rgba(59, 130, 246, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    filter: brightness(1.05);
+    filter: brightness(1.08);
 }
 
 .btn-cta:active {
@@ -332,24 +406,46 @@ header p {
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pillFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.brand-pills .pill:nth-child(1) { animation-delay: 0.1s; }
+.brand-pills .pill:nth-child(2) { animation-delay: 0.2s; }
+.brand-pills .pill:nth-child(3) { animation-delay: 0.3s; }
+.brand-pills .pill:nth-child(4) { animation-delay: 0.4s; }
+.brand-pills .pill:nth-child(5) { animation-delay: 0.5s; }
+.brand-pills .pill:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes pillFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .pill:hover {
-    transform: translateY(-2px);
-    background: rgba(255,255,255,0.18);
-    border-color: rgba(255,255,255,0.28);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transform: translateY(-3px) scale(1.05);
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.35);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.18), 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
 @keyframes logoFloat {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-6px); }
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(0.5deg); }
+    50% { transform: translateY(-8px) rotate(0deg); }
+    75% { transform: translateY(-4px) rotate(-0.5deg); }
 }
 
 @keyframes headerGlow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); opacity: 0.18; }
+    50% { opacity: 0.25; }
+    100% { transform: rotate(360deg); opacity: 0.18; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -503,9 +599,9 @@ main {
 }
 
 .wizard-step:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.02);
     border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     background: #f8fafc;
 }
 
@@ -513,7 +609,14 @@ main {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     border-color: #3b82f6;
     color: #1e40af;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+    animation: stepActive 0.4s ease;
+}
+
+@keyframes stepActive {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 .wizard-step.is-active .wizard-step-num {
@@ -527,16 +630,22 @@ main {
 
 .form-step {
     display: none;
-    animation: stepFade 160ms ease;
+    animation: stepSlideIn 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .form-step.is-active {
     display: block;
 }
 
-@keyframes stepFade {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes stepSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateX(30px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0) scale(1); 
+    }
 }
 
 @keyframes previewBump {
@@ -998,7 +1107,15 @@ h3 {
 .form-group select:focus {
     outline: none;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 
+        0 0 0 4px rgba(59, 130, 246, 0.12),
+        0 0 20px rgba(59, 130, 246, 0.1);
+    animation: inputFocusPulse 1.5s ease infinite;
+}
+
+@keyframes inputFocusPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 0 20px rgba(59, 130, 246, 0.1); }
+    50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.18), 0 0 25px rgba(59, 130, 246, 0.15); }
 }
 
 .form-group input::placeholder,
