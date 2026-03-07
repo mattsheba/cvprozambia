@@ -82,37 +82,40 @@ body {
         #8b5cf6 80%,
         #3b82f6 100%
     );
-    background-size: 400% 100%;
-    animation: borderGlow 6s linear infinite;
+    background-size: 200% 100%;
+    animation: borderGlow 8s linear infinite;
     z-index: -1;
+    will-change: background-position;
 }
 
-/* Shimmer overlay on border */
+/* Shimmer overlay - disabled on mobile for performance */
 .container > *:first-child::before {
     content: '';
     position: absolute;
     top: -1px;
-    left: -100%;
+    left: 0;
     width: 50%;
     height: calc(100% + 2px);
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(59, 130, 246, 0.15) 25%,
-        rgba(255, 255, 255, 0.12) 50%,
-        rgba(249, 115, 22, 0.15) 75%,
+        rgba(59, 130, 246, 0.12) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(249, 115, 22, 0.12) 75%,
         transparent 100%
     );
-    animation: shimmer 5s ease-in-out infinite;
+    transform: translateX(-200%);
+    animation: shimmer 6s ease-in-out infinite;
     pointer-events: none;
     z-index: 10;
+    will-change: transform;
 }
 
 @keyframes shimmer {
-    0% { left: -100%; opacity: 0; }
+    0% { transform: translateX(-200%); opacity: 0; }
     10% { opacity: 1; }
     90% { opacity: 1; }
-    100% { left: 200%; opacity: 0; }
+    100% { transform: translateX(300%); opacity: 0; }
 }
 
 /* Inner container to cover the gradient border */
@@ -127,7 +130,7 @@ body {
 
 @keyframes borderGlow {
     0% { background-position: 0% 50%; }
-    100% { background-position: 400% 50%; }
+    100% { background-position: 200% 50%; }
 }
 
 header {
@@ -453,6 +456,44 @@ header p {
     }
     .pill {
         transition: none;
+    }
+    .container::before {
+        animation: none !important;
+    }
+    .container > *:first-child::before {
+        animation: none !important;
+        display: none;
+    }
+}
+
+/* Simplified animations for mobile/tablet */
+@media (max-width: 768px) {
+    .container::before {
+        animation: borderGlow 12s linear infinite;
+    }
+    .container > *:first-child::before {
+        display: none;
+    }
+    .brand-logo {
+        animation: logoFloat 6s ease-in-out infinite;
+    }
+    .brand-logo::before {
+        animation: none;
+    }
+    .pill {
+        animation: none;
+    }
+    header h1 {
+        animation: none;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    .btn-cta {
+        animation: none;
+    }
+    .btn-cta::before {
+        display: none;
     }
 }
 
