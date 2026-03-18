@@ -1,17 +1,16 @@
 /* Footer alignment overrides (loaded after main styles). */
 
-/* Keep footer bottom as two centered lines on all screen sizes. */
+/* Bottom bar: copyright left, powered+admin right */
 footer .footer-bottom {
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-footer .footer-powered,
-footer .footer-copy {
-  text-align: center;
-}
+footer .footer-copy { text-align: left; }
+footer .footer-powered { text-align: left; }
 
 /* Apply the WhatsApp safe-area to the whole footer so the top buttons
    and the bottom text share the same visual center. */

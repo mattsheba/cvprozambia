@@ -123,38 +123,39 @@ exports.handler = async (event, context) => {
   salesKeys.sort();
   const recentKeys = salesKeys.slice(-25).reverse();
 
-  const recentSales = [];
-  for (const key of recentKeys) {
-    try {
-      const raw = await store.get(key);
-      const rec = raw ? JSON.parse(raw) : null;
-      if (rec && typeof rec === 'object') recentSales.push(rec);
-    } catch {
-      // ignore
-    }
-  }
-
-  const salesCount = salesKeys.length;
-
-  // Revenue: sum logged sale amounts (best-effort). To avoid timeouts,
-  // cap how many sales records we fetch.
+  // Revenue: cap how many sales records we fetch to avoid timeouts.
   const MAX_REVENUE_SALES = 1000;
   const revenueKeys = salesKeys.length > MAX_REVENUE_SALES ? salesKeys.slice(-MAX_REVENUE_SALES) : salesKeys;
   const revenueIsPartial = salesKeys.length > revenueKeys.length;
 
+  // Fetch the capped set once and reuse for both recent sales and revenue.
+  const fetchedRecords = new Map(); // key → parsed record
+  await Promise.all(
+    revenueKeys.map(async (key) => {
+      try {
+        const raw = await store.get(key);
+        const rec = raw ? JSON.parse(raw) : null;
+        if (rec && typeof rec === 'object') fetchedRecords.set(key, rec);
+      } catch {
+        // ignore
+      }
+    })
+  );
+
+  const recentSales = recentKeys.flatMap((k) => {
+    const rec = fetchedRecords.get(k);
+    return rec ? [rec] : [];
+  });
+
+  const salesCount = salesKeys.length;
+
   let revenueZmw = 0;
   let revenueCount = 0;
-  for (const key of revenueKeys) {
-    try {
-      const raw = await store.get(key);
-      const rec = raw ? JSON.parse(raw) : null;
-      const amt = Number(rec?.amount);
-      if (Number.isFinite(amt)) {
-        revenueZmw += amt;
-        revenueCount += 1;
-      }
-    } catch {
-      // ignore
+  for (const rec of fetchedRecords.values()) {
+    const amt = Number(rec?.amount);
+    if (Number.isFinite(amt)) {
+      revenueZmw += amt;
+      revenueCount += 1;
     }
   }
 

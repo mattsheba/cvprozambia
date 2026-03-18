@@ -859,7 +859,7 @@ footer::before {
 }
 .footer-link:hover  { transform:translateY(-1px); text-decoration:none; }
 .footer-link:active { transform:translateY(0); }
-.footer-link:focus-visible { outline:3px solid rgba(200,137,58,.4); outline-offset:2px; }
+.footer-link:focus-visible { outline:3px solid rgba(201,160,32,.4); outline-offset:2px; }
 
 .footer-link-icon-wrap {
     width:28px; height:28px;

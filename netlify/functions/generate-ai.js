@@ -105,6 +105,15 @@ exports.handler = async (event, context) => {
     }
     entry.count += 1;
     _rateState.set(ip, entry);
+
+    // Prune stale entries to prevent unbounded Map growth across warm invocations.
+    if (_rateState.size > 500) {
+      const cutoff = now - windowMs * 2;
+      for (const [k, v] of _rateState) {
+        if (v.start < cutoff) _rateState.delete(k);
+      }
+    }
+
     if (entry.count > maxRequestsPerWindow) {
       return {
         statusCode: 429,

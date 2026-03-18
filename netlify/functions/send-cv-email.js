@@ -95,49 +95,78 @@ exports.handler = async (event) => {
     const name = customerName || 'Valued Customer';
     const productLabel = product === 'bundle' ? 'CV and Cover Letter' : product === 'cover' ? 'Cover Letter' : 'CV';
 
-    // Build email HTML
+    // Build email HTML — brand: Navy (#060D1A–#213668) + Gold (#C9A020) + Pearl (#F8F9FC)
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVPro Zambia</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">CVPro Zambia</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Your Professional ${productLabel}</p>
-    </div>
-    
-    <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
-        <p style="font-size: 18px; margin-top: 0;">Hi ${name},</p>
-        
-        <p>Thank you for using CVPro Zambia! Your ${productLabel.toLowerCase()} is attached to this email.</p>
-        
-        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #1e40af;">Quick Tips for Success:</h3>
-            <ul style="padding-left: 20px; margin-bottom: 0;">
-                <li>Save a copy to your phone and computer</li>
-                <li>Update your CV regularly as you gain new skills</li>
-                <li>Tailor your CV for each job application</li>
-                <li>Keep the file name professional (e.g., FirstName_LastName_CV.pdf)</li>
-            </ul>
-        </div>
-        
-        <p>Need to make changes? Visit <a href="https://cvprozambia.com" style="color: #1e40af; text-decoration: none; font-weight: bold;">cvprozambia.com</a> to update your CV anytime.</p>
-        
-        <p style="margin-bottom: 0;">Best of luck with your job search!</p>
-        <p style="margin-top: 5px;"><strong>The CVPro Zambia Team</strong></p>
-    </div>
-    
-    <div style="background: #1e293b; padding: 20px; border-radius: 0 0 10px 10px; text-align: center;">
-        <p style="color: #94a3b8; margin: 0; font-size: 12px;">
-            &copy; ${new Date().getFullYear()} CVPro Zambia. All rights reserved.
-        </p>
-        <p style="color: #64748b; margin: 10px 0 0 0; font-size: 11px;">
-            This email was sent because you downloaded a ${productLabel.toLowerCase()} from our platform.
-        </p>
-    </div>
+<body style="margin:0; padding:0; background-color:#E8ECF5; font-family:'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#E8ECF5; padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" style="max-width:580px; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(6,13,26,.18);">
+
+        <!-- ── Header ── -->
+        <tr>
+          <td style="background:linear-gradient(148deg,#060D1A 0%,#0B1629 30%,#0F1E38 65%,#213668 100%); padding:36px 32px 28px; text-align:center; border-bottom:3px solid #C9A020;">
+            <p style="margin:0 0 6px; font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9A020;">Professional Documents</p>
+            <h1 style="margin:0; font-size:28px; font-weight:700; color:#F8F9FC; font-family:Georgia,'Times New Roman',serif; letter-spacing:.5px;">CVPro Zambia</h1>
+            <p style="margin:10px 0 0; font-size:14px; color:#E8C94E; letter-spacing:.3px;">Your ${productLabel} is ready</p>
+          </td>
+        </tr>
+
+        <!-- ── Body ── -->
+        <tr>
+          <td style="background:#F8F9FC; padding:32px; border-left:1px solid #D5D9E4; border-right:1px solid #D5D9E4;">
+            <p style="margin:0 0 16px; font-size:18px; font-weight:600; color:#1C1C1E;">Hi ${name},</p>
+            <p style="margin:0 0 20px; font-size:15px; color:#3A3A3C; line-height:1.65;">
+              Thank you for using CVPro Zambia! Your <strong>${productLabel.toLowerCase()}</strong> is attached to this email and ready to use.
+            </p>
+
+            <!-- Tips card -->
+            <table role="presentation" width="100%" style="background:#F2F4F8; border:1px solid #D5DCE8; border-left:4px solid #C9A020; border-radius:8px; margin:0 0 24px;">
+              <tr>
+                <td style="padding:20px 24px;">
+                  <p style="margin:0 0 12px; font-size:14px; font-weight:700; color:#0B1629; text-transform:uppercase; letter-spacing:1px;">Quick Tips for Success</p>
+                  <ul style="margin:0; padding-left:18px; color:#3A3A3C; font-size:14px; line-height:1.8;">
+                    <li>Save a copy to your phone and computer</li>
+                    <li>Update your CV regularly as you gain new skills</li>
+                    <li>Tailor your CV for each job application</li>
+                    <li>Keep the file name professional (e.g., FirstName_LastName_CV.pdf)</li>
+                  </ul>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 20px; font-size:15px; color:#3A3A3C; line-height:1.65;">
+              Need to make changes? Visit
+              <a href="https://cvprozambia.com" style="color:#A68A18; text-decoration:none; font-weight:700; border-bottom:1px solid #C9A020;">cvprozambia.com</a>
+              to update your CV anytime.
+            </p>
+
+            <p style="margin:0 0 4px; font-size:15px; color:#3A3A3C;">Best of luck with your job search!</p>
+            <p style="margin:0; font-size:15px; font-weight:700; color:#0B1629;">The CVPro Zambia Team</p>
+          </td>
+        </tr>
+
+        <!-- ── Footer ── -->
+        <tr>
+          <td style="background:#0B1629; padding:20px 32px; text-align:center; border-top:3px solid #C9A020; border-radius:0 0 12px 12px;">
+            <p style="margin:0 0 6px; font-size:12px; color:#EDB96E; letter-spacing:.3px;">
+              &copy; ${new Date().getFullYear()} CVPro Zambia &mdash; Powered by Glamified Systems
+            </p>
+            <p style="margin:0; font-size:11px; color:#6B6B6B;">
+              This email was sent because you downloaded a ${productLabel.toLowerCase()} from our platform.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>
     `.trim();

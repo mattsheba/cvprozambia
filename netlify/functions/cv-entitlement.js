@@ -9,8 +9,12 @@ function corsHeaders() {
 }
 
 async function getBlobStore() {
-  const { getStore } = require('@netlify/blobs');
-  return getStore('cvpro-zambia-cvs');
+  try {
+    const { getStore } = require('@netlify/blobs');
+    return getStore('cvpro-zambia-cvs');
+  } catch {
+    return null;
+  }
 }
 
 function getUserId(context) {
@@ -42,6 +46,13 @@ exports.handler = async (event, context) => {
   }
 
   const store = await getBlobStore();
+  if (!store) {
+    return {
+      statusCode: 503,
+      headers,
+      body: JSON.stringify({ error: 'Storage unavailable' })
+    };
+  }
   const key = `${userId}:entitlement`;
 
   const raw = await store.get(key);
