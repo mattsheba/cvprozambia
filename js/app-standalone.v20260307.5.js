@@ -269,11 +269,14 @@ function addAllSuggestedSkills() {
     const suggestions = Array.isArray(cvData.skillSuggestions) ? cvData.skillSuggestions : [];
     if (!suggestions.length) return;
 
+    const existingLower = new Set(cvData.skills.map((s) => String(s).toLowerCase()));
     for (const s of suggestions) {
         const skill = String(s || '').trim();
         if (!skill) continue;
-        const exists = cvData.skills.some((x) => String(x).toLowerCase() === skill.toLowerCase());
-        if (!exists) cvData.skills.push(skill);
+        if (!existingLower.has(skill.toLowerCase())) {
+            cvData.skills.push(skill);
+            existingLower.add(skill.toLowerCase());
+        }
     }
 
     cvData.skillSuggestions = [];
@@ -287,13 +290,10 @@ function clearSkillSuggestions() {
     renderSkillSuggestions();
 }
 
+const _escapeHtmlMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+const _escapeHtmlRe = /[&<>"']/g;
 function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return String(value ?? '').replace(_escapeHtmlRe, (ch) => _escapeHtmlMap[ch]);
 }
 
 function getAiTroubleshootingHint() {
@@ -629,81 +629,7 @@ async function sha256Hex(text) {
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function getCanonicalSnapshotForBilling() {
-    const s = collectCVData();
-    // Remove volatile ids + AI suggestion drafts so the same content hashes identically across sessions.
-    return {
-        personalInfo: s.personalInfo,
-        includeReferences: Boolean(s.includeReferences),
-        skills: Array.isArray(s.skills) ? s.skills : [],
-        hobbies: Array.isArray(s.hobbies) ? s.hobbies : [],
-        activitiesHonors: Array.isArray(s.activitiesHonors)
-            ? s.activitiesHonors.map((a) => ({
-                title: a?.title || '',
-                organization: a?.organization || '',
-                year: a?.year || '',
-                details: a?.details || ''
-            }))
-            : [],
-        otherProfiles: Array.isArray(s.otherProfiles)
-            ? s.otherProfiles.map((p) => ({
-                label: p?.label || '',
-                url: p?.url || ''
-            }))
-            : [],
-        experience: Array.isArray(s.experience)
-            ? s.experience.map((e) => ({
-                title: e?.title || '',
-                company: e?.company || '',
-                location: e?.location || '',
-                startDate: e?.startDate || '',
-                endDate: e?.endDate || '',
-                current: Boolean(e?.current),
-                responsibilities: Array.isArray(e?.responsibilities) ? e.responsibilities : []
-            }))
-            : [],
-        education: Array.isArray(s.education)
-            ? s.education.map((e) => ({
-                degree: e?.degree || '',
-                institution: e?.institution || '',
-                location: e?.location || '',
-                graduationDate: e?.graduationDate || ''
-            }))
-            : [],
-        certifications: Array.isArray(s.certifications)
-            ? s.certifications.map((c) => ({
-                name: c?.name || '',
-                issuer: c?.issuer || '',
-                year: c?.year || ''
-            }))
-            : [],
-        languages: Array.isArray(s.languages)
-            ? s.languages.map((l) => ({
-                language: l?.language || '',
-                proficiency: l?.proficiency || ''
-            }))
-            : [],
-        references: Array.isArray(s.references)
-            ? s.references.map((r) => ({
-                name: r?.name || '',
-                title: r?.title || '',
-                organization: r?.organization || '',
-                phone: r?.phone || '',
-                email: r?.email || ''
-            }))
-            : [],
-        // Billing should reflect what gets downloaded, not the pasted job description.
-        coverLetter: {
-            role: String(s?.coverLetterRole || ''),
-            company: String(s?.coverLetterCompany || ''),
-            companyAddress: String(s?.coverCompanyAddress || ''),
-            text: String(s?.coverLetterText || '')
-        }
-    };
-}
-
-function getCanonicalSnapshotForCvBilling() {
-    const s = collectCVData();
+function _canonicalizeCvFields(s) {
     return {
         personalInfo: s.personalInfo,
         includeReferences: Boolean(s.includeReferences),
@@ -767,16 +693,41 @@ function getCanonicalSnapshotForCvBilling() {
     };
 }
 
+function _canonicalizeCoverFields(s) {
+    return {
+        role: String(s?.coverLetterRole || ''),
+        company: String(s?.coverLetterCompany || ''),
+        companyAddress: String(s?.coverCompanyAddress || ''),
+        text: String(s?.coverLetterText || '')
+    };
+}
+
+function getCanonicalSnapshotForBilling() {
+    const s = collectCVData();
+    // Remove volatile ids + AI suggestion drafts so the same content hashes identically across sessions.
+    return {
+        ..._canonicalizeCvFields(s),
+        coverLetter: _canonicalizeCoverFields(s)
+    };
+}
+
+function getCanonicalSnapshotForCvBilling() {
+    return _canonicalizeCvFields(collectCVData());
+}
+
 function getCanonicalSnapshotForCoverBilling() {
     const s = collectCVData();
     return {
         personalInfo: s.personalInfo,
-        coverLetter: {
-            role: String(s?.coverLetterRole || ''),
-            company: String(s?.coverLetterCompany || ''),
-            companyAddress: String(s?.coverCompanyAddress || ''),
-            text: String(s?.coverLetterText || '')
-        }
+        coverLetter: _canonicalizeCoverFields(s)
+    };
+}
+
+function getCanonicalSnapshotsForBothBilling() {
+    const s = collectCVData();
+    return {
+        cv: _canonicalizeCvFields(s),
+        cover: { personalInfo: s.personalInfo, coverLetter: _canonicalizeCoverFields(s) }
     };
 }
 
@@ -905,8 +856,11 @@ async function refreshEntitlementUi() {
         return;
     }
 
-    const cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
-    const coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
+    const snapshots = getCanonicalSnapshotsForBothBilling();
+    const [cvHash, coverHash] = await Promise.all([
+        sha256Hex(stableStringify(snapshots.cv)),
+        sha256Hex(stableStringify(snapshots.cover))
+    ]);
     const ent = await getEntitlement();
 
     const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
@@ -1092,14 +1046,14 @@ async function saveCvNow() {
     }
 }
 
+const _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function formatMonthYear(value) {
     const raw = String(value || '').trim();
     const match = raw.match(/^([0-9]{4})-([0-9]{2})$/);
     if (!match) return raw;
     const year = match[1];
     const month = Number.parseInt(match[2], 10);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const monthName = months[month - 1];
+    const monthName = _months[month - 1];
     if (!monthName) return raw;
     return `${monthName} ${year}`;
 }
@@ -1659,8 +1613,8 @@ function renderSkills() {
         if (!container) return;
         const skills = cvData.skillsGrouped[key] || [];
         container.innerHTML = skills.length
-            ? `<div class="skills-group-label">${label}</div>` + skills.map(skill => `
-                <span class="tag" draggable="true" ondragstart="onSkillDragStart(event, '${key}', ${skills.indexOf(skill)})" ondragover="onSkillDragOver(event)" ondrop="onSkillDrop(event, '${key}', ${skills.indexOf(skill)})" role="button" tabindex="0" title="Click to edit" onclick="editSkill('${skill.replace(/'/g, "\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editSkill('${skill.replace(/'/g, "\\'")}')}" >
+            ? `<div class="skills-group-label">${label}</div>` + skills.map((skill, idx) => `
+                <span class="tag" draggable="true" ondragstart="onSkillDragStart(event, '${key}', ${idx})" ondragover="onSkillDragOver(event)" ondrop="onSkillDrop(event, '${key}', ${idx})" role="button" tabindex="0" title="Click to edit" onclick="editSkill('${skill.replace(/'/g, "\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editSkill('${skill.replace(/'/g, "\\'")}')}" >
                     ${escapeHtml(skill)}
                     <button type="button" onclick="event.stopPropagation(); removeSkill('${skill.replace(/'/g, "\\'")}')" class="tag-remove">×</button>
                 </span>
@@ -1775,6 +1729,7 @@ function editResponsibility(expId, index) {
     renderExperience();
 }
 
+const _bulletPrefixRe = /^[-*•\s\d.()]+\s*/;
 function parseBulletLines(text) {
     const raw = String(text || '').trim();
     if (!raw) return [];
@@ -1783,7 +1738,7 @@ function parseBulletLines(text) {
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean)
-        .map((line) => line.replace(/^[-*•\s\d.()]+\s*/, '').trim())
+        .map((line) => line.replace(_bulletPrefixRe, '').trim())
         .filter((line) => line.length >= 8);
 }
 
@@ -3046,8 +3001,11 @@ async function handleDownload() {
         let cvHash = null;
         let coverHash = null;
         if (user) {
-            cvHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCvBilling()));
-            coverHash = await sha256Hex(stableStringify(getCanonicalSnapshotForCoverBilling()));
+            const snapshots = getCanonicalSnapshotsForBothBilling();
+            [cvHash, coverHash] = await Promise.all([
+                sha256Hex(stableStringify(snapshots.cv)),
+                sha256Hex(stableStringify(snapshots.cover))
+            ]);
             const ent = await getEntitlement();
 
             const cvOk = Boolean(ent?.paidCvHash) && ent.paidCvHash === cvHash;
