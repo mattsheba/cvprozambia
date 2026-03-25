@@ -1613,12 +1613,14 @@ function renderSkills() {
         if (!container) return;
         const skills = cvData.skillsGrouped[key] || [];
         container.innerHTML = skills.length
-            ? `<div class="skills-group-label">${label}</div>` + skills.map((skill, idx) => `
-                <span class="tag" draggable="true" ondragstart="onSkillDragStart(event, '${key}', ${idx})" ondragover="onSkillDragOver(event)" ondrop="onSkillDrop(event, '${key}', ${idx})" role="button" tabindex="0" title="Click to edit" onclick="editSkill('${skill.replace(/'/g, "\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editSkill('${skill.replace(/'/g, "\\'")}')}" >
+            ? `<div class="skills-group-label">${label}</div>` + skills.map((skill, idx) => {
+                const escaped = skill.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return `
+                <span class="tag" draggable="true" ondragstart="onSkillDragStart(event, '${key}', ${idx})" ondragover="onSkillDragOver(event)" ondrop="onSkillDrop(event, '${key}', ${idx})" role="button" tabindex="0" title="Click to edit" onclick="editSkill('${escaped}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editSkill('${escaped}')}" >
                     ${escapeHtml(skill)}
-                    <button type="button" onclick="event.stopPropagation(); removeSkill('${skill.replace(/'/g, "\\'")}')" class="tag-remove">×</button>
+                    <button type="button" onclick="event.stopPropagation(); removeSkill('${escaped}')" class="tag-remove">×</button>
                 </span>
-            `).join('')
+            `}).join('')
             : '';
     });
     schedulePreviewUpdate();
