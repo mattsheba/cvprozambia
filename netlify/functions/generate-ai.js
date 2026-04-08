@@ -1,4 +1,4 @@
-// Netlify Serverless Function to securely proxy Gemini API calls
+// Netlify Serverless Function to securely proxy Claude (Anthropic) API calls
 // NOTE: Some runtimes may not provide global fetch (e.g., older Node versions).
 // We polyfill using node-fetch (already in dependencies) for compatibility.
 // eslint-disable-next-line no-redeclare
@@ -23,8 +23,8 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Gemini API key from environment variables (set in Netlify dashboard)
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  // Anthropic API key from environment variables (set in Netlify dashboard)
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
   // Feature flag: allow disabling suggestions without code changes
   const aiEnabled = (process.env.AI_ENABLED ?? 'true').toLowerCase() === 'true';
@@ -36,24 +36,27 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Debug helper: list available models for this API key.
+  // Debug helper: list available Claude models for this API key.
   // Usage (local): GET /.netlify/functions/generate-ai?listModels=1
   if (isDev && event.httpMethod === 'GET' && event.queryStringParameters?.listModels === '1') {
     try {
-      if (!GEMINI_API_KEY) {
+      if (!ANTHROPIC_API_KEY) {
         return {
           statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'GEMINI_API_KEY not set; cannot list Gemini models' })
+          body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not set; cannot list Claude models' })
         };
       }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`
-      );
+      const response = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        }
+      });
       const data = await response.json();
-      const models = Array.isArray(data?.models)
-        ? data.models.map((m) => ({ name: m.name, supportedGenerationMethods: m.supportedGenerationMethods }))
+      const models = Array.isArray(data?.data)
+        ? data.data.map((m) => ({ id: m.id, display_name: m.display_name }))
         : [];
 
       return {
@@ -142,8 +145,6 @@ exports.handler = async (event, context) => {
 
     // Output token caps by request type (keeps costs predictable)
     const maxOutputTokensByType = {
-      // NOTE: Gemini 2.5 models may spend a large portion of the output budget on
-      // internal "thoughts" tokens; keep these higher to avoid truncation.
       summary: 600,
       skills: 400,
       responsibilities: 900
@@ -152,111 +153,75 @@ exports.handler = async (event, context) => {
     const defaultMaxOutputTokens = Number.parseInt(process.env.AI_MAX_OUTPUT_TOKENS || '500', 10);
     const maxOutputTokens = maxOutputTokensByType[requestedType] ?? defaultMaxOutputTokens;
 
-    // Gemini
-    if (!GEMINI_API_KEY) {
+    // Claude
+    if (!ANTHROPIC_API_KEY) {
       return {
         statusCode: 500,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'GEMINI_API_KEY not configured' })
+        body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' })
       };
     }
 
-    // Model selection
-    // - per-request body { model } always wins
-    // - allow optional per-type env override for skills
-    // - then fallback to GEMINI_MODEL
-    // - finally use sensible defaults per type
+    // Model selection: per-request body { model } wins, then env CLAUDE_MODEL, then defaults
     const defaultModelByType = {
-      summary: 'gemini-2.0-flash',
-      skills: 'gemini-2.0-flash',
-      responsibilities: 'gemini-2.0-flash'
+      summary: 'claude-3-5-haiku-20241022',
+      skills: 'claude-3-5-haiku-20241022',
+      responsibilities: 'claude-3-5-haiku-20241022'
     };
 
     const requestedModelRaw = (
       requestedType === 'skills'
         ? (
             model ||
-            process.env.GEMINI_MODEL_SKILLS ||
+            process.env.CLAUDE_MODEL_SKILLS ||
             defaultModelByType.skills ||
-            process.env.GEMINI_MODEL ||
-            'gemini-2.5-flash'
+            process.env.CLAUDE_MODEL ||
+            'claude-3-5-haiku-20241022'
           )
-        : (model || process.env.GEMINI_MODEL || defaultModelByType[requestedType] || 'gemini-2.5-flash')
+        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-3-5-haiku-20241022')
     ).trim();
-    const requestedModelSafe = requestedModelRaw
-      .replace(/[^a-zA-Z0-9._\/-]/g, '')
-      .replace(/^\/*/, '');
-    const modelId = requestedModelSafe.startsWith('models/')
-      ? requestedModelSafe.slice('models/'.length)
-      : requestedModelSafe;
+    const modelId = requestedModelRaw.replace(/[^a-zA-Z0-9._\/-]/g, '');
 
-    const url = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${GEMINI_API_KEY}`;
-    const commonPayload = {
-      contents: [{ parts: [{ text: prompt }] }]
+    const url = 'https://api.anthropic.com/v1/messages';
+    const payload = {
+      model: modelId,
+      max_tokens: maxOutputTokens,
+      messages: [{ role: 'user', content: prompt }]
     };
 
-    // Gemini 2.5 models can consume a large part of the output budget on internal
-    // "thoughts" tokens. We try to disable/limit that, and fall back if unsupported.
-    const payloadWithThinkingDisabled = {
-      ...commonPayload,
-      generationConfig: {
-        maxOutputTokens,
-        temperature: 0.7,
-        thinkingConfig: { thinkingBudget: 0 }
-      }
-    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
 
-    const payloadWithoutThinkingConfig = {
-      ...commonPayload,
-      generationConfig: {
-        maxOutputTokens,
-        temperature: 0.7
-      }
-    };
-
-    const doFetch = async (payload) => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      return { response, data };
-    };
-
-    let { response, data } = await doFetch(payloadWithThinkingDisabled);
-    if (!response.ok || data?.error) {
-      const message = (data?.error?.message || '').toString();
-      const looksLikeUnsupportedField =
-        message.includes('Unknown name') && (message.includes('thinkingConfig') || message.includes('thinking'));
-
-      if (looksLikeUnsupportedField) {
-        ({ response, data } = await doFetch(payloadWithoutThinkingConfig));
-      }
-    }
-
-    if (!response.ok || data?.error) {
-      const statusCode = data?.error?.code || response.status || 500;
+    if (!response.ok || data?.type === 'error') {
+      const statusCode = data?.error?.status || response.status || 500;
       return {
         statusCode,
         headers: corsHeaders,
         body: JSON.stringify({
-          error: data?.error?.message || 'Gemini API request failed',
-          status: data?.error?.status,
+          error: data?.error?.message || 'Claude API request failed',
           details: data
         })
       };
     }
 
-    // Check if we got a valid response
-    const parts = data?.candidates?.[0]?.content?.parts;
-    const hasTextPart = Array.isArray(parts) && parts.some((p) => typeof p?.text === 'string' && p.text.length);
-    if (hasTextPart) {
-      const generatedText = parts
-        .map((p) => (typeof p?.text === 'string' ? p.text : ''))
-        .join('')
-        .trim();
+    // Parse Claude response
+    const generatedText = Array.isArray(data?.content)
+      ? data.content
+          .filter((b) => b?.type === 'text' && typeof b?.text === 'string')
+          .map((b) => b.text)
+          .join('')
+          .trim()
+      : '';
 
+    if (generatedText.length > 0) {
       return {
         statusCode: 200,
         headers: {
@@ -272,9 +237,8 @@ exports.handler = async (event, context) => {
                   modelId,
                   requestedType,
                   maxOutputTokens,
-                  finishReason: data?.candidates?.[0]?.finishReason,
-                  safetyRatings: data?.candidates?.[0]?.safetyRatings,
-                  usageMetadata: data?.usageMetadata
+                  stopReason: data?.stop_reason,
+                  usage: data?.usage
                 }
               }
             : {})

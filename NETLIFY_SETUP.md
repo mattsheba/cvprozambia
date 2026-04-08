@@ -6,7 +6,7 @@ Your CV Generator is now configured to use **Netlify Functions** for secure sugg
 
 ## 📁 Files Created
 
-1. **netlify/functions/generate-ai.js** - Serverless function to proxy the Gemini API
+1. **netlify/functions/generate-ai.js** - Serverless function to proxy the Claude (Anthropic) API
 2. **netlify.toml** - Netlify configuration
 3. **.env.example** - Environment variable template
 4. **.gitignore** - Prevents committing secrets
@@ -67,8 +67,8 @@ Optional:
 
 ## 🚀 Deployment Steps
 
-### 1. Get Your Gemini API Key
-- Visit: https://makersuite.google.com/app/apikey
+### 1. Get Your Anthropic API Key
+- Visit: https://console.anthropic.com/
 - Create a new API key
 - Copy it for the next step
 
@@ -93,8 +93,8 @@ git push
 2. Navigate to: **Site settings** → **Environment variables**
 3. Click **Add a variable**
 4. Add:
-   - **Key**: `GEMINI_API_KEY`
-   - **Value**: `your_actual_gemini_api_key`
+   - **Key**: `ANTHROPIC_API_KEY`
+   - **Value**: `your_actual_anthropic_api_key`
 5. Click **Save**
 
 ### 4. Redeploy (if needed)
@@ -114,7 +114,7 @@ To test Netlify Functions locally:
 npm install -g netlify-cli
 
 # Create a .env file (don't commit this!)
-echo "GEMINI_API_KEY=your_key_here" > .env
+echo "ANTHROPIC_API_KEY=your_key_here" > .env
 
 # Run locally
 netlify dev
@@ -132,7 +132,7 @@ This will start a local server at `http://localhost:8888` with functions enabled
 ## 📊 Free Tier Limits
 
 - **Netlify Functions**: 125,000 requests/month
-- **Gemini API**: Check current limits at https://ai.google.dev/pricing
+- **Anthropic API**: Check current limits at https://www.anthropic.com/pricing
 
 ---
 
