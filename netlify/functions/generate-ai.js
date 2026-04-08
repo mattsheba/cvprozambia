@@ -164,9 +164,9 @@ exports.handler = async (event, context) => {
 
     // Model selection: per-request body { model } wins, then env CLAUDE_MODEL, then defaults
     const defaultModelByType = {
-      summary: 'claude-3-5-sonnet-20241022',
-      skills: 'claude-3-5-sonnet-20241022',
-      responsibilities: 'claude-3-5-sonnet-20241022'
+      summary: 'claude-sonnet-4-6',
+      skills: 'claude-sonnet-4-6',
+      responsibilities: 'claude-sonnet-4-6'
     };
 
     const requestedModelRaw = (
@@ -176,9 +176,9 @@ exports.handler = async (event, context) => {
             process.env.CLAUDE_MODEL_SKILLS ||
             defaultModelByType.skills ||
             process.env.CLAUDE_MODEL ||
-            'claude-3-5-sonnet-20241022'
+            'claude-sonnet-4-6'
           )
-        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-3-5-sonnet-20241022')
+        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-sonnet-4-6')
     ).trim();
     const modelId = requestedModelRaw.replace(/[^a-zA-Z0-9._\/-]/g, '');
 
