@@ -1,9 +1,14 @@
 // Netlify Serverless Function to securely proxy Claude (Anthropic) API calls
-// NOTE: Some runtimes may not provide global fetch (e.g., older Node versions).
-// We polyfill using node-fetch (already in dependencies) for compatibility.
-// eslint-disable-next-line no-redeclare
-const fetch = globalThis.fetch || require('node-fetch');
+// Uses native fetch (Node 18+ on Netlify). No external dependencies required.
 const _rateState = globalThis.__aiRateState || (globalThis.__aiRateState = new Map());
+
+const jsonHeaders = (corsHeaders) => ({ 'Content-Type': 'application/json', ...corsHeaders });
+
+const jsonResponse = (statusCode, body, corsHeaders) => ({
+  statusCode,
+  headers: jsonHeaders(corsHeaders),
+  body: JSON.stringify(body)
+});
 
 exports.handler = async (event, context) => {
   const corsHeaders = {
@@ -29,11 +34,7 @@ exports.handler = async (event, context) => {
   // Feature flag: allow disabling suggestions without code changes
   const aiEnabled = (process.env.AI_ENABLED ?? 'true').toLowerCase() === 'true';
   if (!aiEnabled) {
-    return {
-      statusCode: 503,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Suggestions temporarily disabled' })
-    };
+    return jsonResponse(503, { error: 'Suggestions temporarily disabled' }, corsHeaders);
   }
 
   // Debug helper: list available Claude models for this API key.
@@ -59,27 +60,15 @@ exports.handler = async (event, context) => {
         ? data.data.map((m) => ({ id: m.id, display_name: m.display_name }))
         : [];
 
-      return {
-        statusCode: response.ok ? 200 : (response.status || 500),
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        body: JSON.stringify({ models })
-      };
+      return jsonResponse(response.ok ? 200 : (response.status || 500), { models }, corsHeaders);
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Failed to list models', message: error.message })
-      };
+      return jsonResponse(500, { error: 'Failed to list models', message: error.message }, corsHeaders);
     }
   }
 
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return jsonResponse(405, { error: 'Method not allowed' }, corsHeaders);
   }
 
   try {
@@ -118,29 +107,17 @@ exports.handler = async (event, context) => {
     }
 
     if (entry.count > maxRequestsPerWindow) {
-      return {
-        statusCode: 429,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Rate limit exceeded. Please wait and try again.' })
-      };
+      return jsonResponse(429, { error: 'Rate limit exceeded. Please wait and try again.' }, corsHeaders);
     }
 
     if (!prompt) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Prompt is required' })
-      };
+      return jsonResponse(400, { error: 'Prompt is required' }, corsHeaders);
     }
 
     // Hard limit prompt size to control cost/abuse
     const maxPromptChars = Number.parseInt(process.env.AI_MAX_PROMPT_CHARS || '4000', 10);
     if (typeof prompt !== 'string' || prompt.length > maxPromptChars) {
-      return {
-        statusCode: 413,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: `Prompt too long. Max ${maxPromptChars} characters.` })
-      };
+      return jsonResponse(413, { error: `Prompt too long. Max ${maxPromptChars} characters.` }, corsHeaders);
     }
 
     // Output token caps by request type (keeps costs predictable)
@@ -155,11 +132,7 @@ exports.handler = async (event, context) => {
 
     // Claude
     if (!ANTHROPIC_API_KEY) {
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' })
-      };
+      return jsonResponse(500, { error: 'ANTHROPIC_API_KEY not configured. Set it in Netlify environment variables.' }, corsHeaders);
     }
 
     // Model selection: per-request body { model } wins, then env CLAUDE_MODEL, then defaults
@@ -198,22 +171,23 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify(payload)
     });
-    const data = await response.json();
+
+    // Parse response safely — Anthropic may return non-JSON on some errors
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      const rawText = await response.text().catch(() => '');
+      return jsonResponse(502, { error: `Anthropic returned non-JSON response (HTTP ${response.status})`, raw: rawText.slice(0, 300) }, corsHeaders);
+    }
 
     if (!response.ok || data?.type === 'error') {
-      // Don't forward Anthropic's 4xx codes like 404 (model not found) directly —
-      // the frontend interprets 404 as "function not found" and hides the real error.
-      // Map upstream 4xx to 502 so the actual error message is visible in the toast.
+      // Map Anthropic 4xx codes that the frontend misreads as "function not found" → 502
       const anthropicStatus = response.status || 500;
       const statusCode = [404, 405, 501].includes(anthropicStatus) ? 502 : anthropicStatus;
-      return {
-        statusCode,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: data?.error?.message || 'Claude API request failed',
-          details: data
-        })
-      };
+      const errorMsg = data?.error?.message || `Anthropic error (HTTP ${anthropicStatus})`;
+      console.error(`Anthropic error [${anthropicStatus}]: ${errorMsg}`, JSON.stringify(data));
+      return jsonResponse(statusCode, { error: errorMsg, anthropicType: data?.error?.type, details: data }, corsHeaders);
     }
 
     // Parse Claude response
@@ -226,48 +200,17 @@ exports.handler = async (event, context) => {
       : '';
 
     if (generatedText.length > 0) {
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        },
-        body: JSON.stringify({
-          text: generatedText,
-          success: true,
-          ...(debugEnabled
-            ? {
-                debug: {
-                  modelId,
-                  requestedType,
-                  maxOutputTokens,
-                  stopReason: data?.stop_reason,
-                  usage: data?.usage
-                }
-              }
-            : {})
-        })
-      };
+      return jsonResponse(200, {
+        text: generatedText,
+        success: true,
+        ...(debugEnabled ? { debug: { modelId, requestedType, maxOutputTokens, stopReason: data?.stop_reason, usage: data?.usage } } : {})
+      }, corsHeaders);
     } else {
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({ 
-          error: 'Failed to generate content',
-          details: data 
-        })
-      };
+      return jsonResponse(500, { error: 'Failed to generate content', details: data }, corsHeaders);
     }
 
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error.message 
-      })
-    };
+    console.error('generate-ai unhandled error:', error);
+    return jsonResponse(500, { error: 'Internal server error', message: error.message }, corsHeaders);
   }
 };
