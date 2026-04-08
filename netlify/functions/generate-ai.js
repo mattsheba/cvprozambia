@@ -164,9 +164,9 @@ exports.handler = async (event, context) => {
 
     // Model selection: per-request body { model } wins, then env CLAUDE_MODEL, then defaults
     const defaultModelByType = {
-      summary: 'claude-3-5-haiku-20241022',
-      skills: 'claude-3-5-haiku-20241022',
-      responsibilities: 'claude-3-5-haiku-20241022'
+      summary: 'claude-3-5-sonnet-20241022',
+      skills: 'claude-3-5-sonnet-20241022',
+      responsibilities: 'claude-3-5-sonnet-20241022'
     };
 
     const requestedModelRaw = (
@@ -176,9 +176,9 @@ exports.handler = async (event, context) => {
             process.env.CLAUDE_MODEL_SKILLS ||
             defaultModelByType.skills ||
             process.env.CLAUDE_MODEL ||
-            'claude-3-5-haiku-20241022'
+            'claude-3-5-sonnet-20241022'
           )
-        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-3-5-haiku-20241022')
+        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-3-5-sonnet-20241022')
     ).trim();
     const modelId = requestedModelRaw.replace(/[^a-zA-Z0-9._\/-]/g, '');
 
@@ -201,7 +201,11 @@ exports.handler = async (event, context) => {
     const data = await response.json();
 
     if (!response.ok || data?.type === 'error') {
-      const statusCode = data?.error?.status || response.status || 500;
+      // Don't forward Anthropic's 4xx codes like 404 (model not found) directly —
+      // the frontend interprets 404 as "function not found" and hides the real error.
+      // Map upstream 4xx to 502 so the actual error message is visible in the toast.
+      const anthropicStatus = response.status || 500;
+      const statusCode = [404, 405, 501].includes(anthropicStatus) ? 502 : anthropicStatus;
       return {
         statusCode,
         headers: corsHeaders,
