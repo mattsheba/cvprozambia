@@ -1,14 +1,9 @@
-// Netlify Serverless Function to securely proxy Claude (Anthropic) API calls
-// Uses native fetch (Node 18+ on Netlify). No external dependencies required.
+// Netlify Serverless Function to securely proxy Gemini API calls
+// NOTE: Some runtimes may not provide global fetch (e.g., older Node versions).
+// We polyfill using node-fetch (already in dependencies) for compatibility.
+// eslint-disable-next-line no-redeclare
+const fetch = globalThis.fetch || require('node-fetch');
 const _rateState = globalThis.__aiRateState || (globalThis.__aiRateState = new Map());
-
-const jsonHeaders = (corsHeaders) => ({ 'Content-Type': 'application/json', ...corsHeaders });
-
-const jsonResponse = (statusCode, body, corsHeaders) => ({
-  statusCode,
-  headers: jsonHeaders(corsHeaders),
-  body: JSON.stringify(body)
-});
 
 exports.handler = async (event, context) => {
   const corsHeaders = {
@@ -28,47 +23,60 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Anthropic API key from environment variables (set in Netlify dashboard)
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+  // Gemini API key from environment variables (set in Netlify dashboard)
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
   // Feature flag: allow disabling suggestions without code changes
   const aiEnabled = (process.env.AI_ENABLED ?? 'true').toLowerCase() === 'true';
   if (!aiEnabled) {
-    return jsonResponse(503, { error: 'Suggestions temporarily disabled' }, corsHeaders);
+    return {
+      statusCode: 503,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Suggestions temporarily disabled' })
+    };
   }
 
-  // Debug helper: list available Claude models for this API key.
+  // Debug helper: list available models for this API key.
   // Usage (local): GET /.netlify/functions/generate-ai?listModels=1
   if (isDev && event.httpMethod === 'GET' && event.queryStringParameters?.listModels === '1') {
     try {
-      if (!ANTHROPIC_API_KEY) {
+      if (!GEMINI_API_KEY) {
         return {
           statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not set; cannot list Claude models' })
+          body: JSON.stringify({ error: 'GEMINI_API_KEY not set; cannot list Gemini models' })
         };
       }
 
-      const response = await fetch('https://api.anthropic.com/v1/models', {
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        }
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`
+      );
       const data = await response.json();
-      const models = Array.isArray(data?.data)
-        ? data.data.map((m) => ({ id: m.id, display_name: m.display_name }))
+      const models = Array.isArray(data?.models)
+        ? data.models.map((m) => ({ name: m.name, supportedGenerationMethods: m.supportedGenerationMethods }))
         : [];
 
-      return jsonResponse(response.ok ? 200 : (response.status || 500), { models }, corsHeaders);
+      return {
+        statusCode: response.ok ? 200 : (response.status || 500),
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        body: JSON.stringify({ models })
+      };
     } catch (error) {
-      return jsonResponse(500, { error: 'Failed to list models', message: error.message }, corsHeaders);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Failed to list models', message: error.message })
+      };
     }
   }
 
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
-    return jsonResponse(405, { error: 'Method not allowed' }, corsHeaders);
+    return {
+      statusCode: 405,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
@@ -107,21 +115,35 @@ exports.handler = async (event, context) => {
     }
 
     if (entry.count > maxRequestsPerWindow) {
-      return jsonResponse(429, { error: 'Rate limit exceeded. Please wait and try again.' }, corsHeaders);
+      return {
+        statusCode: 429,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Rate limit exceeded. Please wait and try again.' })
+      };
     }
 
     if (!prompt) {
-      return jsonResponse(400, { error: 'Prompt is required' }, corsHeaders);
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Prompt is required' })
+      };
     }
 
     // Hard limit prompt size to control cost/abuse
     const maxPromptChars = Number.parseInt(process.env.AI_MAX_PROMPT_CHARS || '4000', 10);
     if (typeof prompt !== 'string' || prompt.length > maxPromptChars) {
-      return jsonResponse(413, { error: `Prompt too long. Max ${maxPromptChars} characters.` }, corsHeaders);
+      return {
+        statusCode: 413,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: `Prompt too long. Max ${maxPromptChars} characters.` })
+      };
     }
 
     // Output token caps by request type (keeps costs predictable)
     const maxOutputTokensByType = {
+      // NOTE: Gemini 2.5 models may spend a large portion of the output budget on
+      // internal "thoughts" tokens; keep these higher to avoid truncation.
       summary: 600,
       skills: 400,
       responsibilities: 900
@@ -130,87 +152,154 @@ exports.handler = async (event, context) => {
     const defaultMaxOutputTokens = Number.parseInt(process.env.AI_MAX_OUTPUT_TOKENS || '500', 10);
     const maxOutputTokens = maxOutputTokensByType[requestedType] ?? defaultMaxOutputTokens;
 
-    // Claude
-    if (!ANTHROPIC_API_KEY) {
-      return jsonResponse(500, { error: 'ANTHROPIC_API_KEY not configured. Set it in Netlify environment variables.' }, corsHeaders);
+    // Gemini
+    if (!GEMINI_API_KEY) {
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'GEMINI_API_KEY not configured' })
+      };
     }
 
-    // Model selection: per-request body { model } wins, then env CLAUDE_MODEL, then defaults
+    // Model selection
+    // - per-request body { model } always wins
+    // - allow optional per-type env override for skills
+    // - then fallback to GEMINI_MODEL
+    // - finally use sensible defaults per type
     const defaultModelByType = {
-      summary: 'claude-3-5-sonnet-20241022',
-      skills: 'claude-3-5-sonnet-20241022',
-      responsibilities: 'claude-3-5-sonnet-20241022'
+      summary: 'gemini-2.0-flash',
+      skills: 'gemini-2.0-flash',
+      responsibilities: 'gemini-2.0-flash'
     };
 
     const requestedModelRaw = (
       requestedType === 'skills'
         ? (
             model ||
-            process.env.CLAUDE_MODEL_SKILLS ||
+            process.env.GEMINI_MODEL_SKILLS ||
             defaultModelByType.skills ||
-            process.env.CLAUDE_MODEL ||
-            'claude-3-5-sonnet-20241022'
+            process.env.GEMINI_MODEL ||
+            'gemini-2.5-flash'
           )
-        : (model || process.env.CLAUDE_MODEL || defaultModelByType[requestedType] || 'claude-3-5-sonnet-20241022')
+        : (model || process.env.GEMINI_MODEL || defaultModelByType[requestedType] || 'gemini-2.5-flash')
     ).trim();
-    const modelId = requestedModelRaw.replace(/[^a-zA-Z0-9._\/-]/g, '');
+    const requestedModelSafe = requestedModelRaw
+      .replace(/[^a-zA-Z0-9._\/-]/g, '')
+      .replace(/^\/*/, '');
+    const modelId = requestedModelSafe.startsWith('models/')
+      ? requestedModelSafe.slice('models/'.length)
+      : requestedModelSafe;
 
-    const url = 'https://api.anthropic.com/v1/messages';
-    const payload = {
-      model: modelId,
-      max_tokens: maxOutputTokens,
-      messages: [{ role: 'user', content: prompt }]
+    const url = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${GEMINI_API_KEY}`;
+    const commonPayload = {
+      contents: [{ parts: [{ text: prompt }] }]
     };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify(payload)
-    });
+    // Gemini 2.5 models can consume a large part of the output budget on internal
+    // "thoughts" tokens. We try to disable/limit that, and fall back if unsupported.
+    const payloadWithThinkingDisabled = {
+      ...commonPayload,
+      generationConfig: {
+        maxOutputTokens,
+        temperature: 0.7,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    };
 
-    // Parse response safely — Anthropic may return non-JSON on some errors
-    let data;
-    try {
-      data = await response.json();
-    } catch (_) {
-      const rawText = await response.text().catch(() => '');
-      return jsonResponse(502, { error: `Anthropic returned non-JSON response (HTTP ${response.status})`, raw: rawText.slice(0, 300) }, corsHeaders);
+    const payloadWithoutThinkingConfig = {
+      ...commonPayload,
+      generationConfig: {
+        maxOutputTokens,
+        temperature: 0.7
+      }
+    };
+
+    const doFetch = async (payload) => {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      return { response, data };
+    };
+
+    let { response, data } = await doFetch(payloadWithThinkingDisabled);
+    if (!response.ok || data?.error) {
+      const message = (data?.error?.message || '').toString();
+      const looksLikeUnsupportedField =
+        message.includes('Unknown name') && (message.includes('thinkingConfig') || message.includes('thinking'));
+
+      if (looksLikeUnsupportedField) {
+        ({ response, data } = await doFetch(payloadWithoutThinkingConfig));
+      }
     }
 
-    if (!response.ok || data?.type === 'error') {
-      // Map Anthropic 4xx codes that the frontend misreads as "function not found" → 502
-      const anthropicStatus = response.status || 500;
-      const statusCode = [404, 405, 501].includes(anthropicStatus) ? 502 : anthropicStatus;
-      const errorMsg = data?.error?.message || `Anthropic error (HTTP ${anthropicStatus})`;
-      console.error(`Anthropic error [${anthropicStatus}]: ${errorMsg}`, JSON.stringify(data));
-      return jsonResponse(statusCode, { error: errorMsg, anthropicType: data?.error?.type, details: data }, corsHeaders);
+    if (!response.ok || data?.error) {
+      const statusCode = data?.error?.code || response.status || 500;
+      return {
+        statusCode,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: data?.error?.message || 'Gemini API request failed',
+          status: data?.error?.status,
+          details: data
+        })
+      };
     }
 
-    // Parse Claude response
-    const generatedText = Array.isArray(data?.content)
-      ? data.content
-          .filter((b) => b?.type === 'text' && typeof b?.text === 'string')
-          .map((b) => b.text)
-          .join('')
-          .trim()
-      : '';
+    // Check if we got a valid response
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const hasTextPart = Array.isArray(parts) && parts.some((p) => typeof p?.text === 'string' && p.text.length);
+    if (hasTextPart) {
+      const generatedText = parts
+        .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+        .join('')
+        .trim();
 
-    if (generatedText.length > 0) {
-      return jsonResponse(200, {
-        text: generatedText,
-        success: true,
-        ...(debugEnabled ? { debug: { modelId, requestedType, maxOutputTokens, stopReason: data?.stop_reason, usage: data?.usage } } : {})
-      }, corsHeaders);
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        },
+        body: JSON.stringify({
+          text: generatedText,
+          success: true,
+          ...(debugEnabled
+            ? {
+                debug: {
+                  modelId,
+                  requestedType,
+                  maxOutputTokens,
+                  finishReason: data?.candidates?.[0]?.finishReason,
+                  safetyRatings: data?.candidates?.[0]?.safetyRatings,
+                  usageMetadata: data?.usageMetadata
+                }
+              }
+            : {})
+        })
+      };
     } else {
-      return jsonResponse(500, { error: 'Failed to generate content', details: data }, corsHeaders);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Failed to generate content',
+          details: data 
+        })
+      };
     }
 
   } catch (error) {
-    console.error('generate-ai unhandled error:', error);
-    return jsonResponse(500, { error: 'Internal server error', message: error.message }, corsHeaders);
+    console.error('Error:', error);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message 
+      })
+    };
   }
 };

@@ -17,7 +17,7 @@
 
 ## Frontend ↔ functions contracts (important)
 - AI suggestions: `POST /.netlify/functions/generate-ai` with JSON `{ prompt, type: 'summary'|'skills'|'responsibilities', model?, debug? }` → `{ text, success }`.
-  - Controlled by env vars: `ANTHROPIC_API_KEY`, `AI_ENABLED`, `AI_RATE_WINDOW_MS`, `AI_RATE_MAX_REQUESTS`, `AI_MAX_PROMPT_CHARS`, `AI_MAX_OUTPUT_TOKENS`, `CLAUDE_MODEL`, `CLAUDE_MODEL_SKILLS`.
+  - Controlled by env vars: `GEMINI_API_KEY`, `AI_ENABLED`, `AI_RATE_WINDOW_MS`, `AI_RATE_MAX_REQUESTS`, `AI_MAX_PROMPT_CHARS`, `AI_MAX_OUTPUT_TOKENS`, `GEMINI_MODEL`, `GEMINI_MODEL_SKILLS`.
 - Identity-authenticated endpoints (frontend uses `fetchWithAuth()` with `Authorization: Bearer <jwt>`):
   - `GET /.netlify/functions/cv-load` and `POST /.netlify/functions/cv-save` (saved CV snapshot)
   - `GET /.netlify/functions/cv-entitlement` and `POST /.netlify/functions/cv-mark-paid` (free re-download entitlement)

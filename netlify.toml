@@ -4,9 +4,6 @@
   publish = "."
   functions = "netlify/functions"
 
-[build.environment]
-  NODE_VERSION = "18"
-
 # Function configuration
 [functions]
   # Directory for serverless functions

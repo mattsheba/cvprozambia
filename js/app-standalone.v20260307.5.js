@@ -1827,7 +1827,7 @@ Return ONLY the bullet list, one bullet per line. No intro or outro text.`;
         const data = await postAiSuggestion({
             prompt: basePrompt,
             type: 'responsibilities',
-            model: 'claude-3-5-sonnet-20241022'
+            model: 'gemini-2.0-flash'
         });
 
         if (!data.success || !data.text) {
@@ -2085,7 +2085,8 @@ Return ONLY the summary text, no headings, no bullet points, no quotes.`;
         const callSuggestionService = (prompt) => postAiSuggestion({
             prompt,
             type: 'summary',
-            model: 'claude-3-5-sonnet-20241022'
+            // Gemini 2.0 flash avoids large "thought" budgets that can truncate output
+            model: 'gemini-2.0-flash'
         });
 
         let data = await callSuggestionService(basePrompt);
@@ -2141,7 +2142,8 @@ Example: Project Management, Team Leadership, Communication`;
         const callSuggestionService = (prompt) => postAiSuggestion({
             prompt,
             type: 'skills',
-            model: 'claude-3-5-sonnet-20241022'
+            // Skills generation works best on Gemini 2.0 flash (avoids large "thought" budgets)
+            model: 'gemini-2.0-flash'
         });
 
         let data = await callSuggestionService(basePrompt);
@@ -2243,7 +2245,7 @@ Return ONLY the cover letter text. No subject line. No bullet points.`;
         const data = await postAiSuggestion({
             prompt,
             type: 'coverletter',
-            model: 'claude-3-5-sonnet-20241022'
+            model: 'gemini-2.0-flash'
         });
 
         if (data.success && data.text) {
